@@ -6,33 +6,27 @@ class NewsService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// ✅ Получить все новости — работает для ВСЕХ, включая гостей
   Stream<List<News>> getNews() {
     return _db
         .collection('news')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => News.fromMap(doc.id, doc.data()))
-        .toList());
+        .map((s) => s.docs.map((d) => News.fromMap(d.id, d.data())).toList());
   }
 
-  /// Добавить новость
-  Future<void> addNews(News news) async {
+  Future<String> addNews(News news) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Пользователь не авторизован');
-    await _db.collection('news').add(news.toMap());
+    final ref = await _db.collection('news').add(news.toMap());
+    return ref.id;
   }
 
-  /// ✅ Обновить новость
   Future<void> updateNews(News news) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Пользователь не авторизован');
-
     await _db.collection('news').doc(news.id).update(news.toMap());
   }
 
-  /// Удалить новость
   Future<void> deleteNews(String newsId) async {
     await _db.collection('news').doc(newsId).delete();
   }

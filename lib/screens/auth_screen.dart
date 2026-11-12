@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../utils/validators.dart';
+import '../widgets/auth_scaffold.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -26,212 +27,126 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  void _snack(String text, {bool error = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: error ? AppTheme.danger : AppTheme.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String _authErrorText(FirebaseAuthException e) {
+    switch (e.code) {
+    // Не уточняем, что именно неверно: так нельзя подбирать чужие адреса.
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Неверный email или пароль';
+      case 'invalid-email':
+        return 'Некорректный email';
+      case 'user-disabled':
+        return 'Аккаунт отключён. Обратитесь в поддержку';
+      case 'too-many-requests':
+        return 'Слишком много попыток. Попробуйте позже';
+      case 'network-request-failed':
+        return 'Нет подключения к интернету';
+      default:
+        return 'Не удалось войти. Попробуйте ещё раз';
+    }
+  }
+
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+
+    final email = _emailController.text.trim();
+    // Пароль не обрезаем: пробелы в начале и в конце могут быть его частью.
+    final password = _passwordController.text;
 
     setState(() => _isLoading = true);
 
     try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-      final user = credential.user;
-
-      // ПРОВЕРКА: подтверждён ли email
-      if (user != null && !user.emailVerified) {
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          _showEmailNotVerifiedDialog(user);
-        }
-        return;
-      }
-
-      if (mounted) {
+      // Если email не подтверждён, AuthWrapper сам покажет экран подтверждения
+      // с повторной отправкой письма. Поэтому в любом случае возвращаемся к корню.
+      if (credential.user != null && mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } on FirebaseAuthException catch (e) {
-      String message = 'Произошла ошибка при входе';
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'Пользователь не найден';
-          break;
-        case 'wrong-password':
-          message = 'Неверный пароль';
-          break;
-        case 'invalid-email':
-          message = 'Некорректный email';
-          break;
-        case 'user-disabled':
-          message = 'Аккаунт отключён';
-          break;
-        case 'too-many-requests':
-          message = 'Слишком много попыток. Попробуйте позже';
-          break;
-        case 'invalid-credential':
-          message = 'Неверный email или пароль';
-          break;
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Произошла непредвиденная ошибка'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      _snack(_authErrorText(e));
+    } catch (_) {
+      _snack('Произошла непредвиденная ошибка');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showEmailNotVerifiedDialog(User user) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_outlined, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Email не подтверждён'),
-          ],
-        ),
-        content: const Text(
-          'Вы не подтвердили свой email. Проверьте почту и перейдите по ссылке из письма.',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await user.sendEmailVerification();
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Письмо отправлено повторно'),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Ошибка: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Отправить снова'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // ✅ Получаем текущую тему
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Вход для студентов'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      backgroundColor: theme.scaffoldBackgroundColor, // ✅ Динамический фон
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+    return AuthScaffold(
+      title: 'Вход для студентов',
+      subtitle: 'ИМИ СВФУ',
+      child: AutofillGroup(
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 40),
-              Icon(
-                Icons.school,
-                size: 80,
-                color: theme.colorScheme.primary, // ✅ Динамический цвет иконки
+              Text(
+                'Добро пожаловать',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Войдите в свою учётную запись',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodySmall?.color,
+                ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Добро пожаловать!',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Войдите в свою учетную запись ИМИ СВФУ',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.disabledColor, // ✅ Динамический цвет
-                ),
-              ),
-              const SizedBox(height: 40),
-
               TextFormField(
                 controller: _emailController,
                 enabled: !_isLoading,
+                autofillHints: const [AutofillHints.email],
+                textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Электронная почта',
                   prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.validateEmail,
               ),
               const SizedBox(height: 16),
-
               TextFormField(
                 controller: _passwordController,
                 enabled: !_isLoading,
                 obscureText: _obscurePassword,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _isLoading ? null : _signIn(),
                 decoration: InputDecoration(
                   labelText: 'Пароль',
                   prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
+                    tooltip: _obscurePassword ? 'Показать пароль' : 'Скрыть пароль',
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     ),
-                    onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 validator: Validators.validatePassword,
               ),
-              const SizedBox(height: 8),
-
-              // ✅ ССЫЛКА "Забыли пароль?"
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -239,75 +154,37 @@ class _AuthScreenState extends State<AuthScreen> {
                       ? null
                       : () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                      const ForgotPasswordScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                   ),
-                  child: Text(
-                    'Забыли пароль?',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary, // ✅ Динамический цвет
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: const Text('Забыли пароль?'),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: _isLoading ? null : _signIn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary, // ✅ Динамический фон
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : const Text(
-                  'Войти',
-                  style: TextStyle(fontSize: 16),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _signIn,
+                  child: _isLoading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                      : const Text('Войти'),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Нет аккаунта? ',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.disabledColor,
-                    ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
                   ),
-                  TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RegisterScreen(),
-                      ),
-                    ),
-                    child: Text(
-                      'Зарегистрироваться',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary, // ✅ Динамический цвет
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                  child: const Text('Создать аккаунт'),
+                ),
               ),
             ],
           ),

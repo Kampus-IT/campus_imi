@@ -17,14 +17,12 @@ import 'gradebook_screen.dart';
 import 'indoor_map_screen.dart';
 import 'news_screen.dart';
 import 'profile_screen.dart';
-import 'schedule_screen.dart';
+import 'schedule_screen.dart'; // <-- УБРАН ДУБЛИКАТ
 import 'settings_screen.dart';
 import 'support_screen.dart';
 import 'tasks_screen.dart';
 import 'union_home_screen.dart';
 
-/// Оболочка студента: нижняя навигация из пяти вкладок.
-/// Главная · Расписание · Карта · Новости · Профиль.
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
   @override
@@ -38,6 +36,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   String _userName = '';
   String _userGroup = '';
   String _userInstitute = '';
+  int? _userSubgroup; // <-- Храним подгруппу
   bool _isLoading = true;
 
   List<Lesson> _lessons = [];
@@ -77,11 +76,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       setState(() => _isLoading = false);
       return;
     }
-    _userSub = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .snapshots()
-        .listen((snapshot) {
+    _userSub = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().listen((snapshot) {
       if (!mounted) return;
       final data = snapshot.data();
       if (data == null) {
@@ -89,9 +84,12 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         return;
       }
       final group = ((data['group'] as String?) ?? '').trim();
+      final subgroup = data['subgroup'] as int?; // <-- Получаем подгруппу
+
       setState(() {
         _userName = ((data['name'] as String?) ?? '').trim();
         _userGroup = group;
+        _userSubgroup = subgroup; // <-- Сохраняем
         _userInstitute = ((data['institute'] as String?) ?? '').trim();
         _isLoading = false;
       });
@@ -110,13 +108,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       _rescheduleReminders();
       return;
     }
-    _lessonsSub = FirebaseFirestore.instance
-        .collection('lessons')
-        .where('group', isEqualTo: group)
-        .snapshots()
-        .listen((snap) async {
-      final lessons =
-      snap.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
+    _lessonsSub = FirebaseFirestore.instance.collection('lessons').where('group', isEqualTo: group).snapshots().listen((snap) async {
+      final lessons = snap.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
       final odd = await ScheduleService.loadOddWeeks();
       if (!mounted) return;
       setState(() {
@@ -128,7 +121,12 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   void _rescheduleReminders() {
-    ScheduleService.rescheduleReminders(_lessons, _oddWeeks).catchError((e) {
+    // Теперь передаем подгруппу в напоминания
+    ScheduleService.rescheduleReminders(
+      _lessons,
+      _oddWeeks,
+      userSubgroup: _userSubgroup, // <-- Передаем подгруппу
+    ).catchError((e) {
       debugPrint('Ошибка планирования напоминаний: $e');
     });
   }
@@ -141,6 +139,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           userName: _userName,
           userGroup: _userGroup,
           userInstitute: _userInstitute,
+          userSubgroup: _userSubgroup, // <-- Передаем подгруппу
           isLoading: _isLoading,
           lessons: _lessons,
           oddWeeks: _oddWeeks,
@@ -187,31 +186,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               selectedIndex: _index,
               onDestinationSelected: _selectTab,
               destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: homeLabel,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.calendar_today_outlined),
-                  selectedIcon: const Icon(Icons.calendar_today),
-                  label: t('schedule'),
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.map_outlined),
-                  selectedIcon: const Icon(Icons.map),
-                  label: t('map'),
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.newspaper_outlined),
-                  selectedIcon: const Icon(Icons.newspaper),
-                  label: t('news'),
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_outline),
-                  selectedIcon: const Icon(Icons.person),
-                  label: t('profile'),
-                ),
+                NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home), label: homeLabel),
+                NavigationDestination(icon: const Icon(Icons.calendar_today_outlined), selectedIcon: const Icon(Icons.calendar_today), label: t('schedule')),
+                NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: t('map')),
+                NavigationDestination(icon: const Icon(Icons.newspaper_outlined), selectedIcon: const Icon(Icons.newspaper), label: t('news')),
+                NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: t('profile')),
               ],
             ),
           ),
@@ -221,13 +200,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ВКЛАДКА «ГЛАВНАЯ»: «Сейчас / дальше» и быстрые действия
-// ═══════════════════════════════════════════════════════════
 class _HomeTab extends StatefulWidget {
   final String userName;
   final String userGroup;
   final String userInstitute;
+  final int? userSubgroup; // <-- Добавили подгруппу
   final bool isLoading;
   final List<Lesson> lessons;
   final List<DateTime> oddWeeks;
@@ -237,6 +214,7 @@ class _HomeTab extends StatefulWidget {
     required this.userName,
     required this.userGroup,
     required this.userInstitute,
+    required this.userSubgroup, // <-- Добавили
     required this.isLoading,
     required this.lessons,
     required this.oddWeeks,
@@ -248,7 +226,6 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  Timer? _ticker;
   bool _dateReady = false;
 
   @override
@@ -257,21 +234,11 @@ class _HomeTabState extends State<_HomeTab> {
     initializeDateFormatting('ru_RU', null).then((_) {
       if (mounted) setState(() => _dateReady = true);
     });
-    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
   }
 
   String _firstName() {
     final parts = widget.userName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (parts.isEmpty) return '';
-    // В профиле имя хранится как «Фамилия Имя Отчество».
     return parts.length >= 2 ? parts[1] : parts[0];
   }
 
@@ -288,28 +255,10 @@ class _HomeTabState extends State<_HomeTab> {
     return 'Добрый вечер';
   }
 
-  String _dayLabel(DateTime date) {
-    final today = ScheduleService.dateOnly(DateTime.now());
-    final d = ScheduleService.dateOnly(date);
-    final diff = d.difference(today).inDays;
-    if (diff == 0) return 'Сегодня';
-    if (diff == 1) return 'Завтра';
-    if (_dateReady) {
-      final s = DateFormat('EEEE, d MMMM', 'ru_RU').format(date);
-      return s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1);
-    }
-    return '${date.day}.${date.month.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final langCode = SettingsService.instance.locale.languageCode;
     String t(String key) => AppStrings.t(key, langCode);
-
-    final now = DateTime.now();
-    final list = ScheduleService.occurrences(widget.lessons, now, widget.oddWeeks, days: 14);
-    final current = ScheduleService.current(list, now);
-    final next = ScheduleService.next(list, now);
 
     return Column(
       children: [
@@ -320,16 +269,13 @@ class _HomeTabState extends State<_HomeTab> {
             children: [
               if (widget.userGroup.isEmpty && !widget.isLoading)
                 _buildNoGroupCard(context)
-              else if (current != null) ...[
-                _buildLessonCard(context, current, now, isCurrent: true),
-                if (next != null) ...[
-                  const SizedBox(height: 10),
-                  _buildNextRow(context, next),
-                ],
-              ] else if (next != null)
-                _buildLessonCard(context, next, now, isCurrent: false)
               else
-                _buildNoLessonsCard(context),
+                _NowNextBlock(
+                  lessons: widget.lessons,
+                  oddWeeks: widget.oddWeeks,
+                  dateReady: _dateReady,
+                  userSubgroup: widget.userSubgroup, // <-- Передаем в блок
+                ),
               AppSectionLabel(t('services')),
               _buildQuickActions(context, t),
             ],
@@ -349,9 +295,7 @@ class _HomeTabState extends State<_HomeTab> {
       dateText = s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1);
     }
     final first = _firstName();
-    final greeting = widget.isLoading
-        ? _greeting(langCode)
-        : (first.isEmpty ? _greeting(langCode) : '${_greeting(langCode)}, $first');
+    final greeting = widget.isLoading ? _greeting(langCode) : (first.isEmpty ? _greeting(langCode) : '${_greeting(langCode)}, $first');
 
     return Container(
       color: bg,
@@ -363,55 +307,20 @@ class _HomeTabState extends State<_HomeTab> {
             children: [
               GestureDetector(
                 onTap: widget.onOpenProfile,
-                child: UserAvatar(
-                  userId: FirebaseAuth.instance.currentUser?.uid,
-                  size: 48,
-                  backgroundColor: Colors.white.withValues(alpha: 0.15),
-                  icon: Icons.person,
-                ),
+                child: UserAvatar(userId: FirebaseAuth.instance.currentUser?.uid, size: 48, backgroundColor: Colors.white.withValues(alpha: 0.15), icon: Icons.person),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (dateText.isNotEmpty)
-                      Text(
-                        dateText,
-                        style: TextStyle(
-                          color: fg.withValues(alpha: 0.8),
-                          fontSize: 12,
-                        ),
-                      ),
-                    Text(
-                      greeting,
-                      style: TextStyle(
-                        color: fg,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (widget.userGroup.isNotEmpty)
-                      Text(
-                        widget.userGroup,
-                        style: TextStyle(
-                          color: fg.withValues(alpha: 0.8),
-                          fontSize: 12,
-                        ),
-                      ),
+                    if (dateText.isNotEmpty) Text(dateText, style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)),
+                    Text(greeting, style: TextStyle(color: fg, fontSize: 19, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    if (widget.userGroup.isNotEmpty) Text(widget.userGroup, style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)),
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.settings_outlined, color: fg),
-                tooltip: 'Настройки',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
-              ),
+              IconButton(icon: Icon(Icons.settings_outlined, color: fg), tooltip: 'Настройки', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
             ],
           ),
         ),
@@ -419,17 +328,107 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  Widget _buildLessonCard(
-      BuildContext context,
-      LessonOccurrence o,
-      DateTime now, {
-        required bool isCurrent,
-      }) {
+  Widget _buildNoGroupCard(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Укажите группу', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text('После этого здесь появятся ближайшие пары', style: TextStyle(fontSize: 13, color: appMutedColor(context))),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: widget.onOpenProfile, child: const Text('Открыть профиль')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context, String Function(String) t) {
+    final items = <_QuickAction>[
+      _QuickAction(Icons.assignment_outlined, t('tasks'), () => const TasksEntry()),
+      _QuickAction(Icons.people_outline, t('union'), () => const UnionHomeScreen()),
+      _QuickAction(Icons.menu_book_outlined, t('gradebook'), () => const GradebookScreen()),
+      _QuickAction(Icons.support_agent, t('support'), () => const SupportScreen()),
+    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final item in items)
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.builder())),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    AppIconBox(item.icon, size: 52),
+                    const SizedBox(height: 6),
+                    Text(item.label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ✅ ВЫНЕСЕННЫЙ БЛОК «СЕЙЧАС / ДАЛЬШЕ»
+class _NowNextBlock extends StatefulWidget {
+  final List<Lesson> lessons;
+  final List<DateTime> oddWeeks;
+  final bool dateReady;
+  final int? userSubgroup; // <-- Добавили подгруппу
+
+  const _NowNextBlock({
+    required this.lessons,
+    required this.oddWeeks,
+    required this.dateReady,
+    required this.userSubgroup, // <-- Добавили
+  });
+
+  @override
+  State<_NowNextBlock> createState() => _NowNextBlockState();
+}
+
+class _NowNextBlockState extends State<_NowNextBlock> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  String _dayLabel(DateTime date) {
+    final today = ScheduleService.dateOnly(DateTime.now());
+    final d = ScheduleService.dateOnly(date);
+    final diff = d.difference(today).inDays;
+    if (diff == 0) return 'Сегодня';
+    if (diff == 1) return 'Завтра';
+    if (widget.dateReady) {
+      final s = DateFormat('EEEE, d MMMM', 'ru_RU').format(date);
+      return s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1);
+    }
+    return '${date.day}.${date.month.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildLessonCard(BuildContext context, LessonOccurrence o, DateTime now, {required bool isCurrent}) {
     final lesson = o.lesson;
     final endFmt = DateFormat('HH:mm');
     final startFmt = DateFormat('HH:mm');
     final muted = appMutedColor(context);
-
     final details = <String>[
       if (lesson.teacher.isNotEmpty) lesson.teacher,
       if (lesson.room.isNotEmpty) 'кабинет ${lesson.room}',
@@ -443,25 +442,12 @@ class _HomeTabState extends State<_HomeTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppBadge(
-                isCurrent ? 'Идёт сейчас' : 'Дальше · ${_dayLabel(o.start)}',
-                tone: isCurrent ? AppTone.success : AppTone.accent,
-              ),
-              Text(
-                isCurrent
-                    ? 'до ${endFmt.format(o.end)}'
-                    : '${startFmt.format(o.start)}–${endFmt.format(o.end)}',
-                style: TextStyle(fontSize: 12, color: muted),
-              ),
+              AppBadge(isCurrent ? 'Идёт сейчас' : 'Дальше · ${_dayLabel(o.start)}', tone: isCurrent ? AppTone.success : AppTone.accent),
+              Text(isCurrent ? 'до ${endFmt.format(o.end)}' : '${startFmt.format(o.start)}–${endFmt.format(o.end)}', style: TextStyle(fontSize: 12, color: muted)),
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            lesson.subject,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(lesson.subject, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
           if (details.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(details, style: TextStyle(fontSize: 13, color: muted)),
@@ -470,12 +456,7 @@ class _HomeTabState extends State<_HomeTab> {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: o.progressAt(now),
-                minHeight: 6,
-                backgroundColor: appAccentSoftColor(context),
-                valueColor: AlwaysStoppedAnimation<Color>(appAccentColor(context)),
-              ),
+              child: LinearProgressIndicator(value: o.progressAt(now), minHeight: 6, backgroundColor: appAccentSoftColor(context), valueColor: AlwaysStoppedAnimation<Color>(appAccentColor(context))),
             ),
           ],
           if (lesson.room.isNotEmpty) ...[
@@ -505,65 +486,20 @@ class _HomeTabState extends State<_HomeTab> {
           Container(
             width: 56,
             padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: appAccentSoftColor(context),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              fmt.format(o.start),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: appAccentColor(context),
-              ),
-            ),
+            decoration: BoxDecoration(color: appAccentSoftColor(context), borderRadius: BorderRadius.circular(8)),
+            child: Text(fmt.format(o.start), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800, color: appAccentColor(context))),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Дальше: ${lesson.subject}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  lesson.room.isEmpty ? _dayLabel(o.start) : 'кабинет ${lesson.room} · ${_dayLabel(o.start)}',
-                  style: TextStyle(fontSize: 12, color: appMutedColor(context)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text('Дальше: ${lesson.subject}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(lesson.room.isEmpty ? _dayLabel(o.start) : 'кабинет ${lesson.room} · ${_dayLabel(o.start)}', style: TextStyle(fontSize: 12, color: appMutedColor(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
           Icon(Icons.chevron_right, size: 20, color: appMutedColor(context)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoGroupCard(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Укажите группу',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'После этого здесь появятся ближайшие пары',
-            style: TextStyle(fontSize: 13, color: appMutedColor(context)),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: widget.onOpenProfile,
-            child: const Text('Открыть профиль'),
-          ),
         ],
       ),
     );
@@ -580,14 +516,8 @@ class _HomeTabState extends State<_HomeTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Ближайших пар нет',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  'Можно отдохнуть',
-                  style: TextStyle(fontSize: 13, color: appMutedColor(context)),
-                ),
+                const Text('Ближайших пар нет', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('Можно отдохнуть', style: TextStyle(fontSize: 13, color: appMutedColor(context))),
               ],
             ),
           ),
@@ -596,44 +526,36 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, String Function(String) t) {
-    final items = <_QuickAction>[
-      _QuickAction(Icons.assignment_outlined, t('tasks'), () => const TasksEntry()),
-      _QuickAction(Icons.people_outline, t('union'), () => const UnionHomeScreen()),
-      _QuickAction(Icons.menu_book_outlined, t('gradebook'), () => const GradebookScreen()),
-      _QuickAction(Icons.support_agent, t('support'), () => const SupportScreen()),
-    ];
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final item in items)
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => item.builder()),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  children: [
-                    AppIconBox(item.icon, size: 52),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.label,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    // ✅ Передаем подгруппу в поиск текущей пары
+    final list = ScheduleService.occurrences(
+      widget.lessons,
+      now,
+      widget.oddWeeks,
+      days: 14,
+      userSubgroup: widget.userSubgroup, // <-- ВОТ СЮДА
     );
+    final current = ScheduleService.current(list, now);
+    final next = ScheduleService.next(list, now);
+
+    if (current != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildLessonCard(context, current, now, isCurrent: true),
+          if (next != null) ...[
+            const SizedBox(height: 10),
+            _buildNextRow(context, next),
+          ],
+        ],
+      );
+    } else if (next != null) {
+      return _buildLessonCard(context, next, now, isCurrent: false);
+    } else {
+      return _buildNoLessonsCard(context);
+    }
   }
 }
 

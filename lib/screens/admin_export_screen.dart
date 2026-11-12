@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/excel_export_service.dart';
@@ -55,7 +56,7 @@ class _AdminExportScreenState extends State<AdminExportScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -67,7 +68,7 @@ class _AdminExportScreenState extends State<AdminExportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Экспорт данных в Excel')),
-      backgroundColor: AppTheme.backgroundGray,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

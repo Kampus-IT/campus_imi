@@ -1,84 +1,42 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_strings.dart';
 import '../services/settings_service.dart';
-import '../theme/app_theme.dart';
+import '../widgets/app_ui.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Слушаем изменения, чтобы экран перерисовывался при смене темы/языка
+    // Слушаем изменения, чтобы экран перерисовывался при смене темы и языка.
     return ListenableBuilder(
       listenable: SettingsService.instance,
       builder: (context, _) {
         final langCode = SettingsService.instance.locale.languageCode;
-        final t = (String key) => AppStrings.t(key, langCode);
+        String t(String key) => AppStrings.t(key, langCode);
         final themeMode = SettingsService.instance.themeMode;
+
+        const modes = [ThemeMode.system, ThemeMode.light, ThemeMode.dark];
+        final themeIndex = modes.indexOf(themeMode).clamp(0, 2);
+        final languages = ['ru', 'en'];
+        final langIndex = languages.indexOf(langCode).clamp(0, 1);
 
         return Scaffold(
           appBar: AppBar(title: Text(t('settings'))),
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                color: Theme.of(context).cardColor,
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.brightness_6),
-                      title: Text(t('theme')),
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text(t('theme_system')),
-                      value: ThemeMode.system,
-                      groupValue: themeMode,
-                      onChanged: (val) =>
-                          SettingsService.instance.setTheme(val!),
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text(t('theme_light')),
-                      value: ThemeMode.light,
-                      groupValue: themeMode,
-                      onChanged: (val) =>
-                          SettingsService.instance.setTheme(val!),
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text(t('theme_dark')),
-                      value: ThemeMode.dark,
-                      groupValue: themeMode,
-                      onChanged: (val) =>
-                          SettingsService.instance.setTheme(val!),
-                    ),
-                  ],
-                ),
+              AppSectionLabel(t('theme'), padding: const EdgeInsets.fromLTRB(4, 0, 4, 8)),
+              AppSegmented(
+                labels: [t('theme_system'), t('theme_light'), t('theme_dark')],
+                index: themeIndex,
+                onChanged: (i) => SettingsService.instance.setTheme(modes[i]),
               ),
-              const SizedBox(height: 16),
-              Card(
-                color: Theme.of(context).cardColor,
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.language),
-                      title: Text(t('language')),
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Русский'),
-                      value: 'ru',
-                      groupValue: langCode,
-                      onChanged: (val) =>
-                          SettingsService.instance.setLanguage(val!),
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('English'),
-                      value: 'en',
-                      groupValue: langCode,
-                      onChanged: (val) =>
-                          SettingsService.instance.setLanguage(val!),
-                    ),
-                  ],
-                ),
+              AppSectionLabel(t('language')),
+              AppSegmented(
+                labels: const ['Русский', 'English'],
+                index: langIndex,
+                onChanged: (i) => SettingsService.instance.setLanguage(languages[i]),
               ),
             ],
           ),

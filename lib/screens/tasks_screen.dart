@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -58,7 +59,7 @@ class TasksScreen extends StatelessWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor, // ✅ Динамический фон
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('Задания · $groupId'),
           bottom: TabBar(
@@ -106,6 +107,7 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
   final _ctrl = TextEditingController();
   Set<String> _blocked = {};
   StreamSubscription<Set<String>>? _blockedSub;
+  bool _rulesAccepted = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -113,6 +115,9 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted) setState(() => _rulesAccepted = prefs.getBool('chat_rules_accepted') ?? false);
+    }).catchError((_) {});
     _blockedSub = _repo.blockedAuthors().listen(
           (ids) {
         if (mounted) setState(() => _blocked = ids);
@@ -131,6 +136,71 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
   void _snack(String text) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  /// Правила сообщества: без согласия с ними писать в чат нельзя (требование App Store).
+  Future<void> _showRulesDialog() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Правила чата'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '1. Чат предназначен для учебного общения. Сообщения видят участники группы и администраторы.\n\n'
+                '2. Запрещены оскорбления, травля, дискриминация, угрозы, спам, реклама и неприемлемый контент.\n\n'
+                '3. Не публикуйте чужие личные данные без согласия.\n\n'
+                '4. Чтобы пожаловаться на сообщение или заблокировать автора, нажмите на сообщение и удерживайте.\n\n'
+                '5. За нарушения администрация может удалить сообщения и ограничить доступ к чату.',
+            style: TextStyle(height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Принимаю')),
+        ],
+      ),
+    );
+    if (accepted == true) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('chat_rules_accepted', true);
+      } catch (_) {}
+      if (mounted) setState(() => _rulesAccepted = true);
+    }
+  }
+
+  /// ✅ ИСПРАВЛЕНО: FilledButton больше не получает бесконечную ширину.
+  /// Обёрнут в SizedBox с фиксированной шириной и явным minimumSize.
+  Widget _buildRulesGate() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Чтобы писать в чат, примите правила сообщества',
+                style: TextStyle(fontSize: 13, color: appMutedColor(context)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 110,
+              child: FilledButton(
+                onPressed: _showRulesDialog,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Правила'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _send() async {
@@ -394,33 +464,36 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
             },
           ),
         ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    minLines: 1,
-                    maxLines: 4,
-                    maxLength: 1000,
-                    buildCounter: (_, {required currentLength, required isFocused, required maxLength}) => null,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      hintText: 'Сообщение',
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                      fillColor: Theme.of(context).cardColor, // ✅
+        if (!_rulesAccepted)
+          _buildRulesGate()
+        else
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      minLines: 1,
+                      maxLines: 4,
+                      maxLength: 1000,
+                      buildCounter: (_, {required currentLength, required isFocused, required maxLength}) => null,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'Сообщение',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        fillColor: Theme.of(context).cardColor,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(onPressed: _send, icon: const Icon(Icons.send)),
-              ],
+                  IconButton(onPressed: _send, icon: const Icon(Icons.send)),
+                ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -484,7 +557,7 @@ class MaterialsTab extends StatelessWidget {
         onPressed: () => showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          backgroundColor: Theme.of(context).cardColor, // ✅
+          backgroundColor: Theme.of(context).cardColor,
           builder: (_) => MaterialForm(groupId: groupId, category: category, withDeadline: withDeadline),
         ),
       )
@@ -722,6 +795,9 @@ class _MaterialFormState extends State<MaterialForm> {
             const SizedBox(height: 12),
             FilledButton(
               onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48), // ✅ корректная ширина — по ширине колонки
+              ),
               child: _saving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Опубликовать'),

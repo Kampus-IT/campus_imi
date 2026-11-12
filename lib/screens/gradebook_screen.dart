@@ -360,7 +360,7 @@ class _PlanTabState extends State<_PlanTab> {
                   ],
                   if (upcoming.isNotEmpty && past.isNotEmpty) const SizedBox(height: 24),
                   if (past.isNotEmpty) ...[
-                    const _SectionTitle('ПРОШЕДШИЕ СОБЫТИЯ', color: AppTheme.textMuted),
+                    _SectionTitle('ПРОШЕДШИЕ СОБЫТИЯ', color: appMutedColor(context)),
                     const SizedBox(height: 12),
                     ...past.map((e) => _PlanCard(event: e, isUpcoming: false)),
                   ],

@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // ✅ Обязательно для фильтров ввода
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../theme/app_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import '../models/department_model.dart';
+import '../theme/app_theme.dart';
+import '../utils/validators.dart';
+import '../widgets/app_ui.dart';
+import '../widgets/auth_scaffold.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,7 +18,6 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -29,489 +31,368 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirm = true;
 
   static const List<String> _allowedDomains = [
-    's-vfu.ru', 'students.s-vfu.ru', 'yandex.ru', 'ya.ru',
-    'mail.ru', 'inbox.ru', 'list.ru', 'bk.ru', 'internet.ru',
-    'gmail.com', 'googlemail.com', 'icloud.com', 'me.com',
-    'mac.com',
+    's-vfu.ru', 'students.s-vfu.ru', 'yandex.ru', 'ya.ru', 'mail.ru', 'inbox.ru',
+    'list.ru', 'bk.ru', 'internet.ru', 'gmail.com', 'googlemail.com', 'icloud.com',
+    'me.com', 'mac.com',
   ];
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  // ✅ Автоматический расчёт курса
-  int _calculateCourse(String groupName) {
-    try {
-      final match = RegExp(r'(\d{2})$').firstMatch(groupName);
-      if (match == null) return 1;
-
-      final yearSuffix = int.parse(match.group(1)!);
-      final admissionYear = 2000 + yearSuffix;
-      if (admissionYear < 2000 || admissionYear > 2100) return 1;
-
-      final now = DateTime.now();
-      final currentAcademicYear = now.month >= 9 ? now.year : now.year - 1;
-
-      int course = currentAcademicYear - admissionYear + 1;
-      if (course < 1) return 1;
-      if (course > 5) return 5;
-      return course;
-    } catch (_) {
-      return 1;
-    }
-  }
-
-  // ✅ Валидация Email
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) return 'Введите email';
-    if (!value.contains('@')) return 'Некорректный email';
-    final domain = value.split('@').last.toLowerCase();
-    if (!_allowedDomains.contains(domain)) return 'Этот домен не поддерживается';
-    return null;
-  }
-
-  // ✅ Валидация ФИО
-  String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Введите ФИО';
-    final name = value.trim();
-    if (name.length < 2) return 'ФИО слишком короткое';
-    return null;
-  }
-
-  // ✅ Валидация Телефона
-  String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Введите номер телефона';
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 11) return 'Введите номер полностью';
-    return null;
-  }
-
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedDeptId == null || _selectedGroup == null) {
-      _snack('Выберите подразделение и группу', error: true);
-      return;
-    }
-    if (_passwordController.text != _confirmPasswordController.text) {
-      _snack('Пароли не совпадают', error: true);
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      final user = credential.user;
-      if (user == null) throw Exception('Не удалось создать пользователя');
-
-      await user.updateDisplayName(_nameController.text.trim());
-
-      final deptDoc = await FirebaseFirestore.instance
-          .collection('departments')
-          .doc(_selectedDeptId)
-          .get();
-      final deptName = deptDoc.data()?['name'] ?? '';
-
-      // ✅ Сохраняем профиль в БД (включая телефон)
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(), // Добавлен телефон
-        'group': _selectedGroup,
-        'departmentId': _selectedDeptId,
-        'institute': deptName,
-        'course': '$_calculatedCourse курс',
-        'role': 'student',
-        'emailVerified': false,
-        'createdAt': FieldValue.serverTimestamp(),
-        'photoBase64': '',
-        'unionPoints': 0, // Инициализируем баллы
-      });
-
-      await user.sendEmailVerification();
-
-      if (mounted) _showVerificationDialog();
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        String msg = 'Ошибка регистрации';
-        switch (e.code) {
-          case 'email-already-in-use':
-            msg = 'Этот email уже зарегистрирован';
-            break;
-          case 'invalid-email':
-            msg = 'Некорректный email';
-            break;
-          case 'weak-password':
-            msg = 'Слишком слабый пароль';
-            break;
-          case 'operation-not-allowed':
-            msg = 'Регистрация по email отключена';
-            break;
-        }
-        _snack(msg, error: true);
-      }
-    } catch (e) {
-      if (mounted) _snack('Ошибка: $e', error: true);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _snack(String msg, {bool error = false}) {
+  void _snack(String text) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
-        backgroundColor: error ? Colors.red : Colors.green,
+        content: Text(text),
+        backgroundColor: AppTheme.danger,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  void _showVerificationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Подтвердите email'),
-        content: Text('Мы отправили письмо на ${_emailController.text.trim()}'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Понятно'),
-          ),
-        ],
-      ),
-    );
+  int _calculateCourse(String groupName) {
+    final match = RegExp(r'(\d{2})$').firstMatch(groupName);
+    if (match == null) return 1;
+    final admissionYear = 2000 + int.parse(match.group(1)!);
+    final now = DateTime.now();
+    final academicYear = now.month >= 9 ? now.year : now.year - 1;
+    final course = academicYear - admissionYear + 1;
+    if (course < 1) return 1;
+    if (course > 6) return 6;
+    return course;
+  }
+
+  String? _validateEmail(String? value) {
+    final base = Validators.validateEmail(value);
+    if (base != null) return base;
+    final domain = value!.trim().split('@').last.toLowerCase();
+    if (!_allowedDomains.contains(domain)) return 'Этот домен не поддерживается';
+    return null;
+  }
+
+  String _registerError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'Этот email уже зарегистрирован. Попробуйте войти';
+      case 'invalid-email':
+        return 'Некорректный email';
+      case 'weak-password':
+        return 'Слишком простой пароль';
+      case 'network-request-failed':
+        return 'Нет подключения к интернету';
+      case 'too-many-requests':
+        return 'Слишком много попыток. Попробуйте позже';
+      default:
+        return 'Не удалось создать аккаунт. Попробуйте ещё раз';
+    }
+  }
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedDeptId == null || _selectedGroup == null) {
+      _snack('Выберите подразделение и группу');
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
+
+    final email = _emailController.text.trim().toLowerCase();
+    final name = _nameController.text.trim();
+    User? createdUser;
+
+    try {
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: _passwordController.text,
+      );
+      final user = credential.user;
+      if (user == null) throw Exception('user is null');
+      createdUser = user;
+
+      await user.updateDisplayName(name);
+
+      // ✅ КРИТИЧНО: принудительно обновляем токен, чтобы Firestore видел авторизацию
+      await user.getIdToken(true);
+
+      // ✅ Небольшая пауза для синхронизации
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final deptDoc =
+      await FirebaseFirestore.instance.collection('departments').doc(_selectedDeptId).get();
+      final deptName = (deptDoc.data()?['name'] ?? '').toString();
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'name': name,
+        'email': email,
+        'group': _selectedGroup,
+        'departmentId': _selectedDeptId,
+        'institute': deptName,
+        'course': '$_calculatedCourse курс',
+        'phone': '',
+        'role': 'student',
+        'emailVerified': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'photoBase64': '',
+      });
+
+      await user.sendEmailVerification();
+
+      // Дальше AuthWrapper сам покажет экран подтверждения email.
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    } on FirebaseAuthException catch (e) {
+      await _rollback(createdUser);
+      _snack(_registerError(e));
+    } catch (e) {
+      // Если ошибка не связана с Auth (например, Firestore), показываем её
+      await _rollback(createdUser);
+      if (mounted) _snack('Ошибка: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _rollback(User? user) async {
+    if (user == null) return;
+    try {
+      await user.delete();
+    } catch (_) {
+      try {
+        await FirebaseAuth.instance.signOut();
+      } catch (_) {}
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Регистрация')),
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(Icons.person_add_alt_1, size: 60, color: AppTheme.primaryNavy),
-              const SizedBox(height: 16),
-              Text('Создать аккаунт',
-                  textAlign: TextAlign.center, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 24),
-
-              // ─── ФИО ──────────────────────────────────────────────
-              TextFormField(
-                controller: _nameController,
-                keyboardType: TextInputType.name,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[а-яА-ЯёЁa-zA-Z\s\-]')),
-                  LengthLimitingTextInputFormatter(50),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'ФИО',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
-                ),
-                validator: _validateName,
+    return AuthScaffold(
+      title: 'Регистрация',
+      subtitle: 'Создайте аккаунт студента',
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              enabled: !_isLoading,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              decoration: const InputDecoration(
+                labelText: 'ФИО',
+                helperText: 'Фамилия Имя Отчество',
+                prefixIcon: Icon(Icons.person_outline),
               ),
-              const SizedBox(height: 16),
+              validator: (v) {
+                final t = v?.trim() ?? '';
+                if (t.isEmpty) return 'Введите ФИО';
+                if (t.length < 3) return 'Слишком короткое имя';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
 
-              // ─── ТЕЛЕФОН ──────────────────────────────────────────
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(11),
-                  _PhoneNumberFormatter(),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Телефон',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(),
-                  hintText: '+7 (999) 123-45-67',
-                ),
-                validator: _validatePhone,
-              ),
-              const SizedBox(height: 16),
+            // 1. Подразделение
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text(
+                    'Не удалось загрузить подразделения. Проверьте подключение.',
+                    style: TextStyle(color: AppTheme.danger),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                final depts = snapshot.data!.docs
+                    .map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>))
+                    .toList();
+                final isValid = depts.any((d) => d.id == _selectedDeptId);
 
-              // ─── ПОДРАЗДЕЛЕНИЕ ────────────────────────────────────
+                return DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Подразделение',
+                    prefixIcon: Icon(Icons.account_balance_outlined),
+                  ),
+                  value: isValid ? _selectedDeptId : null,
+                  isExpanded: true,
+                  dropdownColor: theme.cardColor,
+                  items: depts
+                      .map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName)))
+                      .toList(),
+                  onChanged: _isLoading
+                      ? null
+                      : (val) => setState(() {
+                    _selectedDeptId = val;
+                    _selectedGroup = null;
+                  }),
+                  validator: (v) => v == null ? 'Выберите подразделение' : null,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // 2. Группа выбранного подразделения
+            if (_selectedDeptId != null)
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('departments')
+                    .collection('groups')
+                    .where('departmentId', isEqualTo: _selectedDeptId)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return _errorBox('Не удалось загрузить подразделения');
+                    return Text(
+                      'Не удалось загрузить группы. Проверьте подключение.',
+                      style: TextStyle(color: AppTheme.danger),
+                    );
                   }
-                  if (!snapshot.hasData) {
-                    return const Center(child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(),
-                    ));
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
                   }
+                  final groups = (snapshot.data?.docs
+                      .map((d) => (d.data() as Map<String, dynamic>)['name']?.toString() ?? '')
+                      .where((n) => n.isNotEmpty)
+                      .toList() ??
+                      [])
+                    ..sort();
+                  final isValidGroup = groups.contains(_selectedGroup);
 
-                  final depts = snapshot.data!.docs
-                      .map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>))
-                      .toList()
-                    ..sort((a, b) => a.shortName.compareTo(b.shortName));
-
-                  if (depts.isEmpty) {
-                    return _errorBox('Подразделения ещё не добавлены администратором');
+                  if (groups.isEmpty) {
+                    return Text(
+                      'Для этого подразделения пока нет групп. Обратитесь к администратору.',
+                      style: TextStyle(color: appMutedColor(context)),
+                    );
                   }
-
-                  final isValid = depts.any((d) => d.id == _selectedDeptId);
 
                   return DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
-                      labelText: 'Подразделение',
-                      border: OutlineInputBorder(),
+                      labelText: 'Группа',
+                      prefixIcon: Icon(Icons.groups_outlined),
                     ),
-                    value: isValid ? _selectedDeptId : null,
+                    value: isValidGroup ? _selectedGroup : null,
+                    isExpanded: true,
                     dropdownColor: theme.cardColor,
-                    items: depts
-                        .map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName)))
-                        .toList(),
+                    items: groups.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                     onChanged: _isLoading
                         ? null
-                        : (val) {
-                      setState(() {
-                        _selectedDeptId = val;
-                        _selectedGroup = null;
-                        _calculatedCourse = 1;
-                      });
-                    },
+                        : (val) => setState(() {
+                      _selectedGroup = val;
+                      if (val != null) _calculatedCourse = _calculateCourse(val);
+                    }),
+                    validator: (v) => v == null ? 'Выберите группу' : null,
                   );
                 },
               ),
-              const SizedBox(height: 16),
+            if (_selectedDeptId != null) const SizedBox(height: 16),
 
-              // ─── ГРУППА ───────────────────────────────────────────
-              if (_selectedDeptId != null)
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('groups')
-                      .where('departmentId', isEqualTo: _selectedDeptId)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return _errorBox('Ошибка загрузки групп. Проверьте соединение');
-                    }
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(),
-                      ));
-                    }
-
-                    final groups = (snapshot.data?.docs ?? [])
-                        .map((d) {
-                      final data = d.data() as Map<String, dynamic>;
-                      return (data['name'] as String?) ?? d.id;
-                    })
-                        .where((g) => g.isNotEmpty)
-                        .toList()
-                      ..sort();
-
-                    if (groups.isEmpty) {
-                      return _errorBox('В этом подразделении пока нет групп');
-                    }
-
-                    final isValidGroup = groups.contains(_selectedGroup);
-
-                    return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Группа',
-                        border: OutlineInputBorder(),
+            if (_selectedGroup != null) ...[
+              AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    const AppIconBox(Icons.layers_outlined, size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Курс', style: TextStyle(fontSize: 12, color: appMutedColor(context))),
+                          Text(
+                            '$_calculatedCourse курс · определён по номеру группы',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
                       ),
-                      value: isValidGroup ? _selectedGroup : null,
-                      dropdownColor: theme.cardColor,
-                      items: groups
-                          .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                          .toList(),
-                      onChanged: _isLoading
-                          ? null
-                          : (val) {
-                        setState(() {
-                          _selectedGroup = val;
-                          if (val != null) {
-                            _calculatedCourse = _calculateCourse(val);
-                          }
-                        });
-                      },
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 16),
-
-              // ─── КУРС ─────────────────────────────────────────────
-              if (_selectedGroup != null)
-                TextFormField(
-                  key: ValueKey('course_$_calculatedCourse'),
-                  initialValue: '$_calculatedCourse курс',
-                  readOnly: true,
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'Курс (автоматически)',
-                    prefixIcon: const Icon(Icons.layers_outlined),
-                    border: const OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.grey.withValues(alpha: 0.1),
-                    helperText: 'Определяется автоматически',
-                  ),
-                ),
-              const SizedBox(height: 16),
-
-              // ─── EMAIL ────────────────────────────────────────────
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(50),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
-                ),
-                validator: _validateEmail,
               ),
               const SizedBox(height: 16),
+            ],
 
-              // ─── ПАРОЛЬ ───────────────────────────────────────────
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(30),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Пароль',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                validator: (v) => (v == null || v.length < 6) ? 'Минимум 6 символов' : null,
+            TextFormField(
+              controller: _emailController,
+              enabled: !_isLoading,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              decoration: const InputDecoration(
+                labelText: 'Электронная почта',
+                prefixIcon: Icon(Icons.email_outlined),
               ),
-              const SizedBox(height: 16),
+              validator: _validateEmail,
+            ),
+            const SizedBox(height: 16),
 
-              // ─── ПОВТОР ПАРОЛЯ ────────────────────────────────────
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirm,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(30),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Повторите пароль',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
+            TextFormField(
+              controller: _passwordController,
+              enabled: !_isLoading,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
+              decoration: InputDecoration(
+                labelText: 'Пароль',
+                helperText: 'Не короче 8 символов, буквы и цифры',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  tooltip: _obscurePassword ? 'Показать пароль' : 'Скрыть пароль',
+                  icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
-                validator: (v) => (v != _passwordController.text) ? 'Пароли не совпадают' : null,
               ),
-              const SizedBox(height: 24),
+              validator: Validators.validateNewPassword,
+            ),
+            const SizedBox(height: 16),
 
-              // ─── КНОПКА РЕГИСТРАЦИИ ───────────────────────────────
-              ElevatedButton(
+            TextFormField(
+              controller: _confirmPasswordController,
+              enabled: !_isLoading,
+              obscureText: _obscureConfirm,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _isLoading ? null : _register(),
+              decoration: InputDecoration(
+                labelText: 'Повторите пароль',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  tooltip: _obscureConfirm ? 'Показать пароль' : 'Скрыть пароль',
+                  icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+              validator: (v) => v != _passwordController.text ? 'Пароли не совпадают' : null,
+            ),
+            const SizedBox(height: 24),
+
+            SizedBox(
+              height: 52,
+              child: FilledButton(
                 onPressed: _isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
                 child: _isLoading
                     ? const SizedBox(
-                  width: 20, height: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-                    : const Text('Зарегистрироваться', style: TextStyle(fontSize: 16)),
+                    : const Text('Зарегистрироваться'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _errorBox(String text) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Colors.orange, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 13, color: AppTheme.textDark)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ✅ Класс для автоматической маски телефона (+7 (999) 123-45-67)
-class _PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    final text = newValue.text;
-    if (text.isEmpty) return newValue;
-
-    final digits = text.replaceAll(RegExp(r'\D'), '');
-    final buffer = StringBuffer();
-    buffer.write('+7 ');
-    if (digits.length > 1) {
-      buffer.write('(');
-      buffer.write(digits.substring(1, digits.length > 4 ? 4 : digits.length));
-    }
-    if (digits.length >= 4) {
-      buffer.write(') ');
-      buffer.write(digits.substring(4, digits.length > 7 ? 7 : digits.length));
-    }
-    if (digits.length >= 7) {
-      buffer.write('-');
-      buffer.write(digits.substring(7, digits.length > 9 ? 9 : digits.length));
-    }
-    if (digits.length >= 9) {
-      buffer.write('-');
-      buffer.write(digits.substring(9, digits.length > 11 ? 11 : digits.length));
-    }
-
-    return TextEditingValue(
-      text: buffer.toString(),
-      selection: TextSelection.collapsed(offset: buffer.length),
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -106,7 +107,7 @@ class _EventParticipantsScreenState extends State<EventParticipantsScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -139,7 +140,7 @@ class _EventParticipantsScreenState extends State<EventParticipantsScreen> {
       setState(() => _isBulkAction = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
         );
       }
     }
@@ -173,7 +174,7 @@ class _EventParticipantsScreenState extends State<EventParticipantsScreen> {
       setState(() => _isBulkAction = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
         );
       }
     }

@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -53,7 +54,7 @@ class _AdminCalendarImportScreenState extends State<AdminCalendarImportScreen> {
       debugPrint('❌ [IMPORT] FilePicker error: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка выбора файла: $e')),
+          SnackBar(content: Text(friendlyError(e, fallback: 'Не удалось выбрать файл'))),
         );
       }
     }
@@ -87,7 +88,7 @@ class _AdminCalendarImportScreenState extends State<AdminCalendarImportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Ошибка: $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
           ),
         );
@@ -101,7 +102,7 @@ class _AdminCalendarImportScreenState extends State<AdminCalendarImportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Импорт учебного плана')),
-      backgroundColor: AppTheme.backgroundGray,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

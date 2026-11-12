@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,9 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import '../theme/app_theme.dart';
 import '../models/news_model.dart';
-import '../models/department_model.dart'; // ✅
+import '../models/department_model.dart';
 import '../services/news_service.dart';
-import '../services/push_service.dart';
+import '../services/push_service.dart'; // ✅ добавлен
 
 class AddNewsScreen extends StatefulWidget {
   final News? news;
@@ -31,10 +32,9 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
   final _supabase = Supabase.instance.client;
 
   bool _isLoading = false;
-
   List<String> _imageUrls = [];
   String _category = 'События';
-  String? _selectedDeptId; // ✅ Выбранное подразделение (null = общая новость)
+  String? _selectedDeptId;
 
   static const List<String> _categories = ['Trending', 'Спорт', 'Учёба', 'События', 'Культура'];
 
@@ -69,28 +69,44 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
       final picker = ImagePicker();
       final List<XFile> images = await picker.pickMultiImage(maxWidth: 1920, maxHeight: 1920, imageQuality: 85);
       if (images.isEmpty) return;
-
       setState(() => _isLoading = true);
 
       for (var image in images) {
+        if (_imageUrls.length >= 10) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('В новость можно добавить не больше 10 фото')));
+          break;
+        }
         final bytes = await image.readAsBytes();
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+        if (bytes.length > 5 * 1024 * 1024) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Фото «${image.name}» больше 5 МБ и пропущено')));
+          continue;
+        }
+        final ext = image.name.contains('.') ? image.name.split('.').last.toLowerCase() : 'jpg';
+        final safeExt = const ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${_imageUrls.length}.$safeExt';
+
         await _supabase.storage.from('news_images').uploadBinary(
           fileName, Uint8List.fromList(bytes),
-          fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          fileOptions: FileOptions(cacheControl: '3600', upsert: false, contentType: safeExt == 'jpg' ? 'image/jpeg' : 'image/$safeExt'),
         );
         final publicUrl = _supabase.storage.from('news_images').getPublicUrl(fileName);
         setState(() => _imageUrls.add(publicUrl));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка загрузки фото: $e'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(e, fallback: 'Не удалось загрузить фото')), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveNews() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
+    final sourceUrl = _sourceUrlController.text.trim();
+    if (sourceUrl.isNotEmpty && !sourceUrl.startsWith('https://')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ссылка на источник должна начинаться с https://')));
+      return;
+    }
     setState(() => _isLoading = true);
 
     try {
@@ -112,7 +128,7 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
         category: _category,
         authorName: userName,
         authorId: widget.news?.authorId ?? user.uid,
-        departmentId: _selectedDeptId ?? '', // ✅ Пусто = общая
+        departmentId: _selectedDeptId ?? '',
         imageUrls: _imageUrls,
         imageBase64: '',
         createdAt: widget.news?.createdAt ?? DateTime.now(),
@@ -123,18 +139,22 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
       if (widget.isEditing) {
         await _newsService.updateNews(news);
       } else {
-        await _newsService.addNews(news);
+        // ✅ Возвращает ID новости
+        final newsId = await _newsService.addNews(news);
 
-        // Отправляем пуш всем (в будущем можно фильтровать по departmentId)
-        await PushService.sendToAll(
-          title: 'Новость: ${news.title}',
-          message: news.shortDescription.isNotEmpty ? news.shortDescription : 'Нажмите, чтобы прочитать',
-        );
+        // ✅ Вызываем правильный пуш
+        if (news.departmentId.isEmpty) {
+          await PushService.sendNewsPush(
+            newsId: newsId,
+            title: news.title,
+            message: news.shortDescription.isNotEmpty ? news.shortDescription : 'Нажмите, чтобы прочитать',
+          );
+        }
       }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -148,21 +168,16 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
         content: Text('Новость "${widget.news?.title}" будет удалена навсегда.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Удалить'),
-          ),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text('Удалить')),
         ],
       ),
     );
     if (confirmed != true) return;
-
     try {
       await _newsService.deleteNews(widget.news!.id);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red));
     }
   }
 
@@ -191,15 +206,11 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Введите заголовок' : null,
               ),
               const SizedBox(height: 16),
-
-              // ✅ ВЫБОР ПОДРАЗДЕЛЕНИЯ
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const LinearProgressIndicator();
-
                   final depts = snapshot.data!.docs.map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
-
                   return DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Подразделение (если пусто - для всех)', border: OutlineInputBorder()),
                     value: _selectedDeptId,
@@ -212,7 +223,6 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 },
               ),
               const SizedBox(height: 16),
-
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(border: Border.all(color: AppTheme.divider), borderRadius: BorderRadius.circular(4)),
@@ -226,7 +236,6 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
               TextFormField(
                 controller: _shortDescController,
                 enabled: !_isLoading,
@@ -235,7 +244,6 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Введите описание' : null,
               ),
               const SizedBox(height: 16),
-
               TextFormField(
                 controller: _bodyController,
                 enabled: !_isLoading,
@@ -244,19 +252,13 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Введите текст' : null,
               ),
               const SizedBox(height: 20),
-
               const Text('Фотографии', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
               const SizedBox(height: 10),
-
               GestureDetector(
                 onTap: _isLoading ? null : _pickAndUploadImages,
                 child: Container(
                   height: 100,
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardWhite,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.divider),
-                  ),
+                  decoration: BoxDecoration(color: AppTheme.cardWhite, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.divider)),
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : const Column(
@@ -269,7 +271,6 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                   ),
                 ),
               ),
-
               if (_imageUrls.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -289,11 +290,7 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                             top: 4, right: 4,
                             child: GestureDetector(
                               onTap: () => setState(() => _imageUrls.removeAt(index)),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                child: const Icon(Icons.close, size: 14, color: Colors.white),
-                              ),
+                              child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: const Icon(Icons.close, size: 14, color: Colors.white)),
                             ),
                           ),
                         ],
@@ -301,23 +298,12 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                     },
                   ),
                 ),
-
               const SizedBox(height: 20),
               const Text('Источник (необязательно)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
               const SizedBox(height: 10),
-              TextFormField(
-                controller: _sourceNameController,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(labelText: 'Название источника', hintText: 'Например: КМС ППОС СВФУ «Точка Кипения»', border: OutlineInputBorder(), prefixIcon: Icon(Icons.info_outline)),
-              ),
+              TextFormField(controller: _sourceNameController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Название источника', hintText: 'Например: КМС ППОС СВФУ «Точка Кипения»', border: OutlineInputBorder(), prefixIcon: Icon(Icons.info_outline))),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _sourceUrlController,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(labelText: 'Ссылка на источник (URL)', hintText: 'https://vk.com/wall...', border: OutlineInputBorder(), prefixIcon: Icon(Icons.link)),
-                keyboardType: TextInputType.url,
-              ),
-
+              TextFormField(controller: _sourceUrlController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Ссылка на источник (URL)', hintText: 'https://vk.com/wall...', border: OutlineInputBorder(), prefixIcon: Icon(Icons.link)), keyboardType: TextInputType.url),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,

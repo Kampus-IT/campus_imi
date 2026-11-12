@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import '../widgets/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -56,8 +57,8 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
               if (result == true && mounted) {
                 setState(() {}); // Обновляем список
 
-                // Отправляем пуш всем
-                PushService.sendToAll(
+                // ✅ Отправляем пуш всем (исправлено на sendSchedulePush)
+                PushService.sendSchedulePush(
                   title: 'Обновление расписания',
                   message: 'Добавлена новая пара. Проверьте расписание!',
                 );
@@ -219,7 +220,7 @@ class _AdminScheduleScreenState extends State<AdminScheduleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
         );
       }
     }

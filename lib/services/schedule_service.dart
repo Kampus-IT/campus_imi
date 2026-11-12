@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-
 import '../models/lesson.dart';
 import 'notification_service.dart';
 
-/// Пара с конкретной датой начала и окончания.
 class LessonOccurrence {
   final Lesson lesson;
   final DateTime start;
@@ -13,7 +11,6 @@ class LessonOccurrence {
 
   bool isActiveAt(DateTime now) => !now.isBefore(start) && now.isBefore(end);
 
-  /// Доля пройденного времени (0..1), для индикатора «Сейчас».
   double progressAt(DateTime now) {
     final total = end.difference(start).inSeconds;
     if (total <= 0) return 0;
@@ -22,11 +19,8 @@ class LessonOccurrence {
   }
 }
 
-/// Общая логика расписания: чётность недель, пары на дату,
-/// «сейчас / дальше» и напоминания. Один источник правды для всех экранов.
 class ScheduleService {
   ScheduleService._();
-
   static List<DateTime>? _cachedOddWeeks;
 
   static final List<DateTime> _defaultOddWeeks = [
@@ -35,8 +29,6 @@ class ScheduleService {
     DateTime(2026, 11, 23), DateTime(2026, 12, 7), DateTime(2026, 12, 21),
   ];
 
-  /// Понедельники нечётных недель из Firestore (с кэшем на время сессии).
-  /// Если загрузить не удалось, возвращает график по умолчанию и не кэширует его.
   static Future<List<DateTime>> loadOddWeeks() async {
     final cached = _cachedOddWeeks;
     if (cached != null) return cached;
@@ -72,16 +64,13 @@ class ScheduleService {
   }
 
   static void resetCache() => _cachedOddWeeks = null;
-
   static DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  /// Понедельник недели, в которую попадает дата (время обнуляется).
   static DateTime mondayOf(DateTime d) {
     final x = dateOnly(d);
     return DateTime(x.year, x.month, x.day - (x.weekday - 1));
   }
 
-  /// 1 — нечётная неделя, 2 — чётная.
   static int weekNumber(DateTime date, List<DateTime> oddWeeks) {
     final target = dateOnly(date);
     for (final start in oddWeeks) {
@@ -104,13 +93,11 @@ class ScheduleService {
     return result;
   }
 
-  /// Минуты от начала суток; пары без корректного времени уходят в конец.
   static int startMinutes(Lesson l) {
     final t = _timeMatches(l.time);
     return t.isEmpty ? 24 * 60 : t.first;
   }
 
-  /// Конкретное вхождение пары в дату. null, если время не распознано.
   static LessonOccurrence? occurrenceFor(Lesson lesson, DateTime date) {
     final t = _timeMatches(lesson.time);
     if (t.isEmpty) return null;
@@ -121,33 +108,43 @@ class ScheduleService {
     return LessonOccurrence(lesson, start, end);
   }
 
-  /// Пары на дату с учётом дня недели и чётности, по времени.
   static List<Lesson> lessonsForDate(
       List<Lesson> all,
       DateTime date,
-      List<DateTime> oddWeeks,
-      ) {
+      List<DateTime> oddWeeks, {
+        int? userSubgroup, // <-- Добавлено
+      }) {
     final dayIndex = date.weekday - 1;
     final week = weekNumber(date, oddWeeks);
-    final result = all
-        .where((l) => l.dayIndex == dayIndex && (l.week == 0 || l.week == week))
-        .toList();
+
+    final result = all.where((l) {
+      if (l.dayIndex != dayIndex) return false;
+      if (l.week != 0 && l.week != week) return false;
+
+      if (userSubgroup != null && l.subgroup != null) {
+        if (l.subgroup != userSubgroup) return false;
+      }
+      return true;
+    }).toList();
+
     result.sort((a, b) => startMinutes(a).compareTo(startMinutes(b)));
     return result;
   }
 
-  /// Все пары от сегодняшнего дня на [days] дней вперёд, по времени.
+  // ✅ ИСПРАВЛЕНО: добавлен userSubgroup
   static List<LessonOccurrence> occurrences(
       List<Lesson> all,
       DateTime from,
       List<DateTime> oddWeeks, {
         int days = 14,
+        int? userSubgroup, // <-- Добавлено
       }) {
     final start = dateOnly(from);
     final result = <LessonOccurrence>[];
     for (int i = 0; i < days; i++) {
       final date = DateTime(start.year, start.month, start.day + i);
-      for (final lesson in lessonsForDate(all, date, oddWeeks)) {
+      // Передаем подгруппу в lessonsForDate
+      for (final lesson in lessonsForDate(all, date, oddWeeks, userSubgroup: userSubgroup)) {
         final occ = occurrenceFor(lesson, date);
         if (occ != null) result.add(occ);
       }
@@ -156,7 +153,6 @@ class ScheduleService {
     return result;
   }
 
-  /// Идущая сейчас пара (или null).
   static LessonOccurrence? current(List<LessonOccurrence> list, DateTime now) {
     for (final o in list) {
       if (o.isActiveAt(now)) return o;
@@ -164,7 +160,6 @@ class ScheduleService {
     return null;
   }
 
-  /// Ближайшая будущая пара (или null).
   static LessonOccurrence? next(List<LessonOccurrence> list, DateTime now) {
     for (final o in list) {
       if (o.start.isAfter(now)) return o;
@@ -172,13 +167,14 @@ class ScheduleService {
     return null;
   }
 
-  /// Пересобирает напоминания на ближайшие 14 дней.
+  // ✅ ИСПРАВЛЕНО: добавлен userSubgroup
   static Future<void> rescheduleReminders(
       List<Lesson> all,
-      List<DateTime> oddWeeks,
-      ) async {
+      List<DateTime> oddWeeks, {
+        int? userSubgroup, // <-- Добавлено
+      }) async {
     final now = DateTime.now();
-    final list = occurrences(all, now, oddWeeks, days: 14);
+    final list = occurrences(all, now, oddWeeks, days: 14, userSubgroup: userSubgroup);
     final reminders = <LessonReminder>[
       for (final o in list)
         if (o.start.isAfter(now))

@@ -1,3 +1,5 @@
+import '../widgets/app_ui.dart';
+import '../utils/error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
@@ -130,7 +132,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Ошибка: $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -155,7 +157,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
           ),
         ],
       ),
-      backgroundColor: AppTheme.backgroundGray,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -174,14 +176,14 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primaryNavy : AppTheme.cardWhite,
+                        color: isSelected ? AppTheme.primaryNavy : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? AppTheme.primaryNavy : AppTheme.divider),
+                        border: Border.all(color: isSelected ? AppTheme.primaryNavy : appLineColor(context)),
                       ),
                       child: Text(
                         _days[i],
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textDark,
+                          color: isSelected ? Colors.white : (Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textDark),
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontSize: 13,
                         ),
@@ -203,10 +205,10 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primaryNavy.withValues(alpha: 0.1) : AppTheme.cardWhite,
+                        color: isSelected ? AppTheme.primaryNavy.withValues(alpha: 0.1) : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected ? AppTheme.primaryNavy : AppTheme.divider,
+                          color: isSelected ? AppTheme.primaryNavy : appLineColor(context),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -214,14 +216,14 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                         children: [
                           Icon(
                             isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                            color: isSelected ? AppTheme.primaryNavy : AppTheme.textMuted,
+                            color: isSelected ? AppTheme.primaryNavy : appMutedColor(context),
                             size: 22,
                           ),
                           const SizedBox(width: 12),
                           Text(
                             _weeks[i],
                             style: TextStyle(
-                              color: AppTheme.textDark,
+                              color: (Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textDark),
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                               fontSize: 14,
                             ),
@@ -268,10 +270,10 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                     requestFocusOnTap: true,
                     inputDecorationTheme: InputDecorationTheme(
                       filled: true,
-                      fillColor: AppTheme.cardWhite,
+                      fillColor: Theme.of(context).cardColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderSide: BorderSide(color: appLineColor(context)),
                       ),
                     ),
                     dropdownMenuEntries: finalGroups.map<DropdownMenuEntry<String>>((group) {
@@ -301,10 +303,10 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.accentBlue.withValues(alpha: 0.1) : AppTheme.cardWhite,
+                        color: isSelected ? AppTheme.accentBlue.withValues(alpha: 0.1) : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected ? AppTheme.accentBlue : AppTheme.divider,
+                          color: isSelected ? AppTheme.accentBlue : appLineColor(context),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -312,16 +314,16 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                         children: [
                           Icon(
                             isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                            color: isSelected ? AppTheme.accentBlue : AppTheme.textMuted,
+                            color: isSelected ? AppTheme.accentBlue : appMutedColor(context),
                             size: 22,
                           ),
                           const SizedBox(width: 12),
-                          const Icon(Icons.access_time, size: 18, color: AppTheme.textMuted),
+                          Icon(Icons.access_time, size: 18, color: appMutedColor(context)),
                           const SizedBox(width: 8),
                           Text(
                             _timeSlots[i],
                             style: TextStyle(
-                              color: AppTheme.textDark,
+                              color: (Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textDark),
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                               fontSize: 14,
                             ),
@@ -338,12 +340,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _subjectController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Иностранный язык',
                   prefixIcon: Icon(Icons.book_outlined),
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: AppTheme.cardWhite,
+                  fillColor: Theme.of(context).cardColor,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Введите название';
@@ -356,12 +358,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _teacherController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Егорова Т.Н.',
                   prefixIcon: Icon(Icons.person_outline),
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: AppTheme.cardWhite,
+                  fillColor: Theme.of(context).cardColor,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Введите преподавателя';
@@ -374,12 +376,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _roomController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '561',
                   prefixIcon: Icon(Icons.room_outlined),
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: AppTheme.cardWhite,
+                  fillColor: Theme.of(context).cardColor,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Введите аудиторию';
@@ -399,14 +401,14 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.accentBlue : AppTheme.cardWhite,
+                        color: isSelected ? AppTheme.accentBlue : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? AppTheme.accentBlue : AppTheme.divider),
+                        border: Border.all(color: isSelected ? AppTheme.accentBlue : appLineColor(context)),
                       ),
                       child: Text(
                         type['label']!,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textDark,
+                          color: isSelected ? Colors.white : (Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textDark),
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                           fontSize: 13,
                         ),
@@ -454,10 +456,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: AppTheme.textMuted,
+        color: appMutedColor(context),
         letterSpacing: 0.5,
       ),
     );

@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import '../widgets/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -586,7 +587,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -640,7 +641,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
           ),
         );
@@ -687,7 +688,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
           ),
         );

@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +12,6 @@ import '../widgets/app_ui.dart';
 import '../widgets/lesson_widgets.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  /// true — экран внутри нижней навигации (без стрелки «назад»).
   final bool embedded;
   const ScheduleScreen({super.key, this.embedded = false});
 
@@ -21,24 +19,26 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAliveClientMixin {
   static const List<String> _dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
   int _selectedDay = 0;
-  int _selectedWeek = 0; // 0 — текущая, 1 — следующая
+  int _selectedWeek = 0;
   String _userGroup = '';
+  int? _userSubgroup; // <-- Храним подгруппу
   bool _loading = true;
   bool _loadFailed = false;
   List<DateTime> _oddWeeks = [];
-  Stream<QuerySnapshot<Map<String, dynamic>>>? _stream;
   Timer? _ticker;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _pickInitialDay();
-    _loadData();
-    // Раз в минуту обновляем подсветку «Сейчас».
+    _initialize();
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -50,7 +50,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     super.dispose();
   }
 
-  /// Открываем сегодняшний день; в воскресенье показываем понедельник следующей недели.
   void _pickInitialDay() {
     final now = DateTime.now();
     if (now.weekday == DateTime.sunday) {
@@ -62,57 +61,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _loading = true;
-      _loadFailed = false;
-    });
+  Future<void> _initialize() async {
     try {
       await initializeDateFormatting('ru_RU', null);
-      final user = FirebaseAuth.instance.currentUser;
-      String group = '';
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        group = ((doc.data()?['group'] as String?) ?? '').trim();
-      }
       final odd = await ScheduleService.loadOddWeeks();
       if (!mounted) return;
       setState(() {
-        _userGroup = group;
         _oddWeeks = odd;
-        _stream = group.isEmpty ? null : _buildStream(group);
         _loading = false;
       });
     } catch (e) {
-      debugPrint('Ошибка загрузки расписания: $e');
+      debugPrint('Ошибка инициализации расписания: $e');
       if (!mounted) return;
-      setState(() {
-        _loadFailed = true;
-        _loading = false;
-      });
+      setState(() { _loadFailed = true; _loading = false; });
     }
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _buildStream(String group) {
-    return FirebaseFirestore.instance
-        .collection('lessons')
-        .where('group', isEqualTo: group)
-        .snapshots();
   }
 
   List<DateTime> _weekDates() {
     final monday = ScheduleService.mondayOf(DateTime.now());
-    final start =
-    DateTime(monday.year, monday.month, monday.day + _selectedWeek * 7);
-    return List.generate(
-        6, (i) => DateTime(start.year, start.month, start.day + i));
+    final start = DateTime(monday.year, monday.month, monday.day + _selectedWeek * 7);
+    return List.generate(6, (i) => DateTime(start.year, start.month, start.day + i));
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Column(
         children: [
@@ -136,11 +109,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: Row(
             children: [
               if (!widget.embedded)
-                IconButton(
-                  icon: Icon(Icons.arrow_back, color: fg),
-                  tooltip: 'Назад',
-                  onPressed: () => Navigator.pop(context),
-                )
+                IconButton(icon: Icon(Icons.arrow_back, color: fg), tooltip: 'Назад', onPressed: () => Navigator.pop(context))
               else
                 const SizedBox(width: 16),
               Expanded(
@@ -148,21 +117,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Расписание',
-                      style: TextStyle(
-                        color: fg,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    Text('Расписание', style: TextStyle(color: fg, fontSize: 18, fontWeight: FontWeight.w700)),
                     if (_userGroup.isNotEmpty)
                       Text(
-                        'Группа $_userGroup',
-                        style: TextStyle(
-                          color: fg.withValues(alpha: 0.8),
-                          fontSize: 12,
-                        ),
+                          'Группа $_userGroup${_userSubgroup != null ? ' · ${_userSubgroup} пг' : ''}',
+                          style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)
                       ),
                   ],
                 ),
@@ -176,21 +135,60 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_loadFailed) return AppErrorState(onRetry: _loadData);
-    if (_userGroup.isEmpty || _stream == null) {
+    if (_loadFailed) return AppErrorState(onRetry: _initialize);
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       return const AppEmptyState(
-        icon: Icons.groups_outlined,
-        title: 'Группа не указана',
-        message: 'Укажите группу в профиле, и здесь появится расписание',
+        icon: Icons.person_outline,
+        title: 'Вы не авторизованы',
+        message: 'Войдите в аккаунт, чтобы увидеть расписание',
       );
     }
 
+    // ✅ Слушаем документ пользователя (группа + подгруппа)
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.hasError) {
+          return AppErrorState(onRetry: () => setState(() {}));
+        }
+        if (!userSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final data = userSnapshot.data?.data();
+        final group = ((data?['group'] as String?) ?? '').trim();
+        final subgroup = data?['subgroup'] as int?;
+
+        if (group != _userGroup || subgroup != _userSubgroup) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              _userGroup = group;
+              _userSubgroup = subgroup;
+            });
+          });
+        }
+
+        if (group.isEmpty) {
+          return const AppEmptyState(
+            icon: Icons.groups_outlined,
+            title: 'Группа не указана',
+            message: 'Укажите группу в профиле, и здесь появится расписание',
+          );
+        }
+
+        return _buildScheduleContent(context, group, subgroup);
+      },
+    );
+  }
+
+  Widget _buildScheduleContent(BuildContext context, String group, int? subgroup) {
     final dates = _weekDates();
     final weekNum = ScheduleService.weekNumber(dates.first, _oddWeeks);
     final rangeFmt = DateFormat('d MMMM', 'ru_RU');
-    final rangeText =
-        '${DateFormat('d', 'ru_RU').format(dates.first)}–${rangeFmt.format(dates.last)}'
-        ' · ${weekNum == 1 ? 'нечётная' : 'чётная'} неделя';
+    final rangeText = '${DateFormat('d', 'ru_RU').format(dates.first)}–${rangeFmt.format(dates.last)} · ${weekNum == 1 ? 'нечётная' : 'чётная'} неделя';
     final selectedDate = dates[_selectedDay.clamp(0, dates.length - 1)];
 
     return Column(
@@ -207,10 +205,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              rangeText,
-              style: TextStyle(fontSize: 12, color: appMutedColor(context)),
-            ),
+            child: Text(rangeText, style: TextStyle(fontSize: 12, color: appMutedColor(context))),
           ),
         ),
         _buildDayStrip(context, dates),
@@ -230,21 +225,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: _stream,
+            stream: FirebaseFirestore.instance.collection('lessons').where('group', isEqualTo: group).snapshots(),
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return AppErrorState(
-                  onRetry: () => setState(() => _stream = _buildStream(_userGroup)),
-                );
-              }
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final all = snapshot.data!.docs
-                  .map((d) => Lesson.fromMap(d.id, d.data()))
-                  .toList();
-              final lessons =
-              ScheduleService.lessonsForDate(all, selectedDate, _oddWeeks);
+              if (snapshot.hasError) return AppErrorState(onRetry: () => setState(() {}));
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+              final all = snapshot.data!.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
+
+              // ✅ Передаем подгруппу для фильтрации
+              final lessons = ScheduleService.lessonsForDate(
+                all,
+                selectedDate,
+                _oddWeeks,
+                userSubgroup: subgroup,
+              );
 
               if (lessons.isEmpty) {
                 return const AppEmptyState(
@@ -255,8 +249,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               }
 
               final now = DateTime.now();
-              final isToday = ScheduleService.dateOnly(selectedDate) ==
-                  ScheduleService.dateOnly(now);
+              final isToday = ScheduleService.dateOnly(selectedDate) == ScheduleService.dateOnly(now);
 
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -264,8 +257,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, i) {
                   final lesson = lessons[i];
-                  bool isNow = false;
-                  bool isPast = false;
+                  bool isNow = false, isPast = false;
                   if (isToday) {
                     final occ = ScheduleService.occurrenceFor(lesson, selectedDate);
                     if (occ != null) {
@@ -312,34 +304,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        _dayNames[i],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? selectedFg : appMutedColor(context),
-                        ),
-                      ),
+                      Text(_dayNames[i], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? selectedFg : appMutedColor(context))),
                       const SizedBox(height: 2),
-                      Text(
-                        '${dates[i].day}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? selectedFg
-                              : Theme.of(context).textTheme.bodyMedium?.color,
-                        ),
-                      ),
+                      Text('${dates[i].day}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: selected ? selectedFg : Theme.of(context).textTheme.bodyMedium?.color)),
                       const SizedBox(height: 2),
                       Container(
                         width: 5,
                         height: 5,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isToday
-                              ? (selected ? selectedFg : appAccentColor(context))
-                              : Colors.transparent,
+                          color: isToday ? (selected ? selectedFg : appAccentColor(context)) : Colors.transparent,
                         ),
                       ),
                     ],

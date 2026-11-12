@@ -36,6 +36,7 @@ class Lesson {
   final int dayIndex;
   final String group;
   final int week;
+  final int? subgroup; // 1, 2 или null (для всей группы)
 
   const Lesson({
     required this.id,
@@ -47,6 +48,7 @@ class Lesson {
     required this.dayIndex,
     required this.group,
     this.week = 0,
+    this.subgroup,
   });
 
   Map<String, dynamic> toMap() {
@@ -59,11 +61,11 @@ class Lesson {
       'dayIndex': dayIndex,
       'group': group,
       'week': week,
+      if (subgroup != null) 'subgroup': subgroup,
     };
   }
 
   factory Lesson.fromMap(String id, Map<String, dynamic> map) {
-    // ПОДДЕРЖКА ОБОИХ ВАРИАНТОВ: dayIndex и dayindex
     final dayIndexRaw = map['dayIndex'] ?? map['dayindex'];
     final weekRaw = map['week'] ?? map['Week'];
 
@@ -77,6 +79,7 @@ class Lesson {
       dayIndex: int.tryParse(dayIndexRaw?.toString().trim() ?? '0') ?? 0,
       group: (map['group'] ?? '').toString().trim(),
       week: int.tryParse(weekRaw?.toString().trim() ?? '0') ?? 0,
+      subgroup: map['subgroup'] as int?,
     );
   }
 
@@ -90,6 +93,7 @@ class Lesson {
     int? dayIndex,
     String? group,
     int? week,
+    int? subgroup,
   }) {
     return Lesson(
       id: id ?? this.id,
@@ -101,6 +105,7 @@ class Lesson {
       dayIndex: dayIndex ?? this.dayIndex,
       group: group ?? this.group,
       week: week ?? this.week,
+      subgroup: subgroup ?? this.subgroup,
     );
   }
 
@@ -109,5 +114,5 @@ class Lesson {
   String get endTime => timeParts.length > 1 ? timeParts[1].trim() : '';
 
   @override
-  String toString() => 'Lesson(id: $id, subject: $subject, time: $time)';
+  String toString() => 'Lesson(id: $id, subject: $subject, time: $time, subgroup: $subgroup)';
 }

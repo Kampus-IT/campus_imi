@@ -1,3 +1,4 @@
+import '../widgets/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -45,7 +46,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       case 'Учёба': return AppTheme.accentBlue;
       case 'События': return Colors.purple;
       case 'Культура': return Colors.teal;
-      default: return AppTheme.textMuted;
+      default: return appMutedColor(context);
     }
   }
 
@@ -263,7 +264,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                                 padding: const EdgeInsets.only(top: 8),
                                 child: GestureDetector(
                                   onTap: () async {
-                                    final url = Uri.parse(widget.news.sourceUrl);
+                                    final url = Uri.tryParse(widget.news.sourceUrl);
+                                    if (url == null || url.scheme != 'https') return;
                                     if (await canLaunchUrl(url)) {
                                       await launchUrl(url, mode: LaunchMode.externalApplication);
                                     }

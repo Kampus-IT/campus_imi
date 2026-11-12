@@ -3,10 +3,39 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
-import '../theme/app_theme.dart';
+import '../widgets/app_ui.dart';
 
 class NotificationSettingsScreen extends StatelessWidget {
   const NotificationSettingsScreen({super.key});
+
+  Future<void> _toggle(BuildContext context, bool value) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    // 1. Сохраняем выбор (расписание перепланирует напоминания само).
+    SettingsService.instance.setNotificationsEnabled(value);
+
+    bool permissionGranted = true;
+    try {
+      if (!value) {
+        // 2. Отключаем: убираем локальные напоминания и push-подписку.
+        await NotificationService.cancelAll();
+        OneSignal.User.pushSubscription.optOut();
+      } else {
+        // 3. Включаем: просим разрешение системы, затем подписываемся.
+        permissionGranted = await OneSignal.Notifications.requestPermission(true);
+        OneSignal.User.pushSubscription.optIn();
+      }
+    } catch (e) {
+      debugPrint('📨 [PUSH] Ошибка OneSignal: $e');
+    }
+
+    final text = !value
+        ? 'Уведомления отключены'
+        : (permissionGranted
+        ? 'Уведомления включены'
+        : 'Разрешите уведомления в настройках телефона, иначе они не придут');
+    messenger.showSnackBar(SnackBar(content: Text(text), behavior: SnackBarBehavior.floating));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,99 +46,43 @@ class NotificationSettingsScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(title: const Text('Уведомления')),
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                color: Theme.of(context).cardColor,
-                child: Column(
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: SwitchListTile(
+                  value: enabled,
+                  title: const Text('Все уведомления', style: TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: const Text('Напоминания о парах, новости, мероприятия'),
+                  onChanged: (v) => _toggle(context, v),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: enabled ? appAccentSoftColor(context) : const Color(0x1FFF9800),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
                   children: [
-                    SwitchListTile(
-                      value: enabled,
-                      title: const Text('Все уведомления'),
-                      subtitle: const Text(
-                        'Напоминания о парах, новости, мероприятия',
-                        style: TextStyle(fontSize: 12),
+                    Icon(
+                      enabled ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
+                      color: enabled ? appAccentColor(context) : Colors.orange,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        enabled
+                            ? 'Вы получаете напоминания о парах за 10 минут, а также новости и события.'
+                            : 'Уведомления отключены: напоминаний о парах, новостей и событий не будет.',
+                        style: const TextStyle(fontSize: 13),
                       ),
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (v) async {
-                        // 1. Сохраняем флаг
-                        SettingsService.instance
-                            .setNotificationsEnabled(v);
-
-                        // 2. Отменяем локальные уведомления при выключении
-                        if (!v) {
-                          await NotificationService.cancelAll();
-                        }
-
-                        // 3. Подписка/отписка OneSignal (актуальный API v5+)
-                        try {
-                          if (!v) {
-                            OneSignal.User.pushSubscription.optOut();
-                          } else {
-                            OneSignal.User.pushSubscription.optIn();
-                          }
-                        } catch (e) {
-                          debugPrint('📨 [PUSH] Ошибка OneSignal: $e');
-                        }
-
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(v
-                                  ? '✅ Уведомления включены'
-                                  : '🔕 Уведомления отключены'),
-                              backgroundColor: v ? Colors.green : Colors.orange,
-                            ),
-                          );
-                        }
-                      },
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              if (enabled)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.lightBlue.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.info_outline, color: AppTheme.accentBlue),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Сейчас вы получаете напоминания о парах и уведомления о новостях и мероприятиях.',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (!enabled)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.notifications_off, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Уведомления отключены. Вы не будете получать напоминания о парах, новости и события.',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         );

@@ -85,7 +85,6 @@ class _CalendarPlanScreenState extends State<CalendarPlanScreen> {
         ),
         title: const Text('Учебный план'),
       ),
-      backgroundColor: AppTheme.backgroundGray,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userGroup.isEmpty
@@ -134,9 +133,9 @@ class _CalendarPlanScreenState extends State<CalendarPlanScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardWhite,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.divider),
+                  border: Border.all(color: appLineColor(context)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,17 +174,17 @@ class _CalendarPlanScreenState extends State<CalendarPlanScreen> {
                           Text(
                             '${fmt.format(e.start)} — ${fmt.format(e.end)} '
                                 '${yearFmt.format(e.end)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 13,
-                                color: AppTheme.textMuted),
+                                color: appMutedColor(context)),
                           ),
                           if (e.duration.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(
                               e.duration,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.textMuted),
+                                  color: appMutedColor(context)),
                             ),
                           ],
                         ],

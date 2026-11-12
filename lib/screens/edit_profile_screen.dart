@@ -1,11 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // ✅ Добавлено для inputFormatters
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
-import 'dart:convert';
+
+import '../theme/app_theme.dart';
+import '../widgets/app_ui.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -16,21 +19,28 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  static const int _maxPhotoBytes = 3 * 1024 * 1024; // 3 МБ
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  bool _isSavingProfile = false;
-  bool _isUploadingAvatar = false;
+  bool _isSaving = false;
+  Uint8List? _newPhotoBytes;
+  late final String _initialName;
+  late final String _initialPhone;
 
-  String? _newPhotoUrl;
-  Uint8List? _previewBytes;
+  // ✅ Состояние для подгруппы
+  int? _selectedSubgroup;
 
   @override
   void initState() {
     super.initState();
-    _nameController.text = widget.userData['name'] ?? '';
-    _phoneController.text = widget.userData['phone'] ?? '';
+    _initialName = (widget.userData['name'] ?? '').toString();
+    _initialPhone = (widget.userData['phone'] ?? '').toString();
+    _nameController.text = _initialName;
+    _phoneController.text = _initialPhone;
+    _selectedSubgroup = widget.userData['subgroup'] as int?; // Загружаем подгруппу
   }
 
   @override
@@ -40,359 +50,294 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // ✅ Валидация ФИО
-  String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Введите ФИО';
-    final name = value.trim();
-    if (name.length < 2) return 'ФИО слишком короткое';
-    if (name.length > 50) return 'ФИО слишком длинное (макс. 50)';
-    // Разрешаем только русские/английские буквы, пробелы и дефисы
-    if (!RegExp(r'^[а-яА-ЯёЁa-zA-Z\s\-]+$').hasMatch(name)) {
-      return 'ФИО может содержать только буквы';
-    }
-    return null;
+  bool get _isDirty =>
+      _newPhotoBytes != null ||
+          _nameController.text.trim() != _initialName.trim() ||
+          _phoneController.text.trim() != _initialPhone.trim() ||
+          _selectedSubgroup != (widget.userData['subgroup'] as int?); // Проверяем изменение подгруппы
+
+  void _snack(String text, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: error ? AppTheme.danger : null,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
-  // ✅ Валидация Телефона
-  String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Введите номер телефона';
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 11) return 'Введите номер полностью';
-    return null;
-  }
-
-  Future<void> _pickAndUploadAvatar() async {
+  Future<void> _pickAvatar() async {
     try {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      final image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        maxWidth: 600,
-        maxHeight: 600,
-        imageQuality: 70,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
       );
-
       if (image == null) return;
-
       final bytes = await image.readAsBytes();
-
-      setState(() {
-        _previewBytes = bytes;
-        _isUploadingAvatar = true;
-      });
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('Пользователь не авторизован');
-
-      final fileName = 'avatar_${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      await Supabase.instance.client.storage.from('avatars').uploadBinary(
-        fileName,
-        Uint8List.fromList(bytes),
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-      ).timeout(const Duration(seconds: 30));
-
-      final publicUrl = Supabase.instance.client.storage.from('avatars').getPublicUrl(fileName);
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'photoUrl': publicUrl,
-        'photoBase64': '',
-      }).timeout(const Duration(seconds: 15));
-
-      setState(() {
-        _newPhotoUrl = publicUrl;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Фото профиля обновлено!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      if (bytes.length > _maxPhotoBytes) {
+        _snack('Фото слишком большое. Выберите файл до 3 МБ', error: true);
+        return;
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _previewBytes = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Ошибка загрузки фото: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploadingAvatar = false);
+      if (mounted) setState(() => _newPhotoBytes = bytes);
+    } catch (_) {
+      _snack('Не удалось выбрать фото', error: true);
     }
+  }
+
+  String? _validatePhone(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    final digits = t.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return null;
+    if (digits.length < 10) return 'Номер слишком короткий';
+    if (digits.length > 15) return 'Слишком длинный номер';
+    return null;
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSavingProfile = true);
+    FocusScope.of(context).unfocus();
+    setState(() => _isSaving = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('Пользователь не авторизован');
+      if (user == null) throw Exception('not signed in');
 
       final updates = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'subgroup': _selectedSubgroup, // ✅ Сохраняем подгруппу
       };
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update(updates)
-          .timeout(const Duration(seconds: 15));
+      if (_newPhotoBytes != null) {
+        final fileName = 'avatar_${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await Supabase.instance.client.storage.from('avatars').uploadBinary(
+          fileName,
+          _newPhotoBytes!,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/jpeg'),
+        );
+        updates['photoUrl'] = Supabase.instance.client.storage.from('avatars').getPublicUrl(fileName);
+        updates['photoBase64'] = '';
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updates);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Профиль сохранен'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        Navigator.pop(context);
+        _snack('Профиль обновлён');
+        Navigator.pop(context, true);
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Ошибка: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    } catch (_) {
+      _snack('Не удалось сохранить профиль. Проверьте подключение и попробуйте ещё раз.', error: true);
     } finally {
-      if (mounted) setState(() => _isSavingProfile = false);
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<bool> _confirmDiscard() async {
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Выйти без сохранения?'),
+        content: const Text('Внесённые изменения будут потеряны.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Остаться')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Выйти', style: TextStyle(color: AppTheme.danger))),
+        ],
+      ),
+    );
+    return discard == true;
+  }
+
+  ImageProvider? _currentPhoto() {
+    if (_newPhotoBytes != null) return MemoryImage(_newPhotoBytes!);
+    final url = (widget.userData['photoUrl'] ?? '').toString();
+    if (url.startsWith('https://')) return NetworkImage(url);
+    final b64 = (widget.userData['photoBase64'] ?? '').toString();
+    if (b64.isNotEmpty) {
+      try {
+        return MemoryImage(base64Decode(b64));
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  Widget _readOnlyRow(IconData icon, String label, String value, String hint) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          AppIconBox(icon, size: 40, tone: AppTone.neutral),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 12, color: appMutedColor(context))),
+                Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                Text(hint, style: TextStyle(fontSize: 11, color: appMutedColor(context))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final oldPhotoBase64 = widget.userData['photoBase64'];
-    final oldPhotoUrl = widget.userData['photoUrl'];
+    final photo = _currentPhoto();
+    final institute = (widget.userData['institute'] ?? 'Не указано').toString();
+    final group = (widget.userData['group'] ?? 'Не указана').toString();
+    final course = (widget.userData['course'] ?? 'Не указан').toString();
 
-    final userGroup = widget.userData['group'] ?? 'Не указана';
-    final userInstitute = widget.userData['institute'] ?? 'Не указано';
-    final userCourse = widget.userData['course'] ?? 'Не указан';
-
-    ImageProvider? imageProvider;
-    if (_previewBytes != null) {
-      imageProvider = MemoryImage(_previewBytes!);
-    } else if (_newPhotoUrl != null && _newPhotoUrl!.isNotEmpty) {
-      imageProvider = NetworkImage(_newPhotoUrl!);
-    } else if (oldPhotoUrl != null && oldPhotoUrl.isNotEmpty) {
-      imageProvider = NetworkImage(oldPhotoUrl);
-    } else if (oldPhotoBase64 != null && oldPhotoBase64.isNotEmpty) {
-      try {
-        imageProvider = MemoryImage(base64Decode(oldPhotoBase64));
-      } catch (_) {}
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Редактировать профиль')),
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ─── АВАТАРКА ───────────────────────────────────────
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        border: Border.all(color: theme.cardColor, width: 4),
-                        image: imageProvider != null
-                            ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-                            : null,
+    return PopScope(
+      canPop: !_isDirty || _isSaving,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final navigator = Navigator.of(context);
+        if (await _confirmDiscard()) navigator.pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Редактировать профиль')),
+        body: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            onChanged: () => setState(() {}),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: appAccentSoftColor(context),
+                          image: photo != null ? DecorationImage(image: photo, fit: BoxFit.cover) : null,
+                        ),
+                        child: photo == null ? Icon(Icons.person, size: 50, color: appAccentColor(context)) : null,
                       ),
-                      child: imageProvider == null
-                          ? Icon(Icons.person, size: 50, color: theme.colorScheme.primary)
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _isUploadingAvatar ? Colors.grey : theme.colorScheme.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Material(
+                          color: appAccentColor(context),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: _isSaving ? null : _pickAvatar,
+                            child: const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                            ),
                           ),
-                          child: _isUploadingAvatar
-                              ? const SizedBox(
-                              width: 18, height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                          )
-                              : const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_isUploadingAvatar)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: Text(
-                    'Загрузка фото...',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 24),
-
-              // ─── ЗАБЛОКИРОВАННЫЕ ПОЛЯ ─────────────────────────────
-              TextFormField(
-                initialValue: userInstitute,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Подразделение',
-                  prefixIcon: Icon(Icons.school_outlined),
-                  border: OutlineInputBorder(),
-                  helperText: 'Для смены обратитесь в деканат',
+                const AppSectionLabel('Личные данные'),
+                TextFormField(
+                  controller: _nameController,
+                  enabled: !_isSaving,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'ФИО', prefixIcon: Icon(Icons.person_outline)),
+                  validator: (v) {
+                    final t = v?.trim() ?? '';
+                    if (t.length < 3) return 'Введите ФИО';
+                    if (t.length > 100) return 'Слишком длинное имя';
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                initialValue: userGroup,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Группа',
-                  prefixIcon: Icon(Icons.groups_outlined),
-                  border: OutlineInputBorder(),
-                  helperText: 'Для смены обратитесь в деканат',
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  enabled: !_isSaving,
+                  keyboardType: const TextInputType.numberWithOptions(signed: false, decimal: false),
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(labelText: 'Телефон (необязательно)', prefixIcon: Icon(Icons.phone_outlined)),
+                  validator: _validatePhone,
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                initialValue: userCourse,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Курс',
-                  prefixIcon: Icon(Icons.layers_outlined),
-                  border: OutlineInputBorder(),
-                  helperText: 'Определяется автоматически',
+                const AppSectionLabel('Учёба'),
+                AppCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      _readOnlyRow(Icons.school_outlined, 'Подразделение', institute, 'Для смены обратитесь в деканат'),
+                      const Divider(height: 1, indent: 64),
+                      _readOnlyRow(Icons.groups_outlined, 'Группа', group, 'Для смены обратитесь в деканат'),
+                      const Divider(height: 1, indent: 64),
+                      _readOnlyRow(Icons.layers_outlined, 'Курс', course, 'Определяется по номеру группы'),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
 
-              // ─── РЕДАКТИРУЕМЫЕ ПОЛЯ ───────────────────────────────
-              TextFormField(
-                controller: _nameController,
-                enabled: !_isSavingProfile,
-                keyboardType: TextInputType.name,
-                // ✅ Ограничиваем ввод: только буквы, пробелы и дефисы
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[а-яА-ЯёЁa-zA-Z\s\-]')),
-                  LengthLimitingTextInputFormatter(50), // Максимум 50 символов
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'ФИО',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+                // ✅ БЛОК ВЫБОРА ПОДГРУППЫ
+                const AppSectionLabel('Подгруппа'),
+                AppCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Укажите вашу подгруппу для отображения правильного расписания',
+                        style: TextStyle(fontSize: 13, color: appMutedColor(context)),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('Все'),
+                              selected: _selectedSubgroup == null,
+                              onSelected: (val) => setState(() => _selectedSubgroup = null),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('1 пг'),
+                              selected: _selectedSubgroup == 1,
+                              onSelected: (val) => setState(() => _selectedSubgroup = 1),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('2 пг'),
+                              selected: _selectedSubgroup == 2,
+                              onSelected: (val) => setState(() => _selectedSubgroup = 2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                validator: _validateName,
-              ),
-              const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _phoneController,
-                enabled: !_isSavingProfile,
-                keyboardType: TextInputType.phone,
-                // ✅ Маска для телефона: +7 (XXX) XXX-XX-XX
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly, // Только цифры
-                  LengthLimitingTextInputFormatter(11),   // Максимум 11 цифр
-                  _PhoneNumberFormatter(),                // Автоматическая маска
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Телефон',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(),
-                  hintText: '+7 (999) 123-45-67',
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: _isSaving || !_isDirty ? null : _saveProfile,
+                    child: _isSaving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Сохранить'),
+                  ),
                 ),
-                validator: _validatePhone,
-              ),
-
-              const SizedBox(height: 32),
-
-              // ─── КНОПКА СОХРАНИТЬ ─────────────────────────────────
-              ElevatedButton(
-                onPressed: (_isSavingProfile || _isUploadingAvatar) ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: _isSavingProfile
-                    ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                )
-                    : const Text('Сохранить', style: TextStyle(fontSize: 16)),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-// ✅ Класс для красивой автоматической маски телефона
-class _PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    final text = newValue.text;
-    if (text.isEmpty) return newValue;
-
-    final digits = text.replaceAll(RegExp(r'\D'), '');
-    final buffer = StringBuffer();
-    buffer.write('+7 ');
-    if (digits.length > 1) {
-      buffer.write('(');
-      buffer.write(digits.substring(1, digits.length > 4 ? 4 : digits.length));
-    }
-    if (digits.length >= 4) {
-      buffer.write(') ');
-      buffer.write(digits.substring(4, digits.length > 7 ? 7 : digits.length));
-    }
-    if (digits.length >= 7) {
-      buffer.write('-');
-      buffer.write(digits.substring(7, digits.length > 9 ? 9 : digits.length));
-    }
-    if (digits.length >= 9) {
-      buffer.write('-');
-      buffer.write(digits.substring(9, digits.length > 11 ? 11 : digits.length));
-    }
-
-    return TextEditingValue(
-      text: buffer.toString(),
-      selection: TextSelection.collapsed(offset: buffer.length),
     );
   }
 }

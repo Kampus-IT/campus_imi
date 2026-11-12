@@ -17,11 +17,13 @@ class Validators {
   }
 
   static String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) {
       return 'Введите email';
     }
-    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegExp.hasMatch(value)) {
+    // Допускаем длинные домены верхнего уровня (.email, .university) и плюсы в адресе.
+    final emailRegExp = RegExp(r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$');
+    if (!emailRegExp.hasMatch(email)) {
       return 'Некорректный email';
     }
     return null;
@@ -33,6 +35,21 @@ class Validators {
     }
     if (value.length < 6) {
       return 'Пароль должен быть минимум 6 символов';
+    }
+    return null;
+  }
+
+  /// Для регистрации и смены пароля: не короче 8 символов, есть буква и цифра.
+  /// Для входа используйте validatePassword, чтобы не блокировать старые пароли.
+  static String? validateNewPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Введите пароль';
+    }
+    if (value.length < 8) {
+      return 'Пароль должен быть минимум 8 символов';
+    }
+    if (!RegExp(r'[A-Za-zА-Яа-я]').hasMatch(value) || !RegExp(r'\d').hasMatch(value)) {
+      return 'Добавьте в пароль буквы и цифры';
     }
     return null;
   }

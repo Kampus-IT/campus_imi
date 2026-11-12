@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
@@ -41,7 +42,7 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -122,11 +123,11 @@ class _AdminDepartmentsScreenState extends State<AdminDepartmentsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Подразделения СВФУ')),
-      backgroundColor: AppTheme.backgroundGray,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
-            color: AppTheme.cardWhite,
+            color: Theme.of(context).cardColor,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [

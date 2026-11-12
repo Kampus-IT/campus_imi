@@ -1,3 +1,4 @@
+import '../widgets/app_ui.dart';
 // lib/screens/support_screen.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -555,18 +556,18 @@ class _TicketCardState extends State<_TicketCard> {
                     children: [
                       Text(
                         isAuto ? _S.autoReplyLabel : _S.supportReply,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: (Theme.of(context).textTheme.bodyLarge?.color ?? AppTheme.textDark),
                         ),
                       ),
                       if (isAuto) ...[
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.smart_toy_outlined,
                           size: 12,
-                          color: AppTheme.textMuted,
+                          color: appMutedColor(context),
                         ),
                       ],
                     ],

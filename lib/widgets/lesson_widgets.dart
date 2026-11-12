@@ -101,10 +101,10 @@ class LessonTile extends StatelessWidget {
       child: AppCard(
         padding: const EdgeInsets.all(10),
         borderColor: isNow ? appAccentColor(context) : null,
-        // ✅ Исправление: используем IntrinsicHeight, чтобы Row не падал
         child: IntrinsicHeight(
+          // ✅ ИСПРАВЛЕНИЕ: оборачиваем Row в IntrinsicHeight
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // ✅ Теперь безопасно
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
                 width: 62,
@@ -140,7 +140,7 @@ class LessonTile extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center, // ✅ Прижимаем по центру
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Wrap(
                       spacing: 6,

@@ -1,7 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.campus_imi">
 
-    <!-- ✅ Разрешения -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
@@ -19,12 +18,18 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round">
 
-        <!-- ✅ OneSignal -->
         <meta-data
             android:name="com.onesignal.APP_ID"
             android:value="${onesignal_app_id}" />
 
-        <!-- ✅ Провайдер для Excel -->
+        <!-- ✅ Иконка для уведомлений (OneSignal) -->
+        <meta-data
+            android:name="com.onesignal.NotificationSmallIcon"
+            android:value="ic_stat_notify" />
+        <meta-data
+            android:name="com.onesignal.NotificationAccentColor.DEFAULT"
+            android:value="FF1A2A5E" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -35,7 +40,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- ✅ Главная активность -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -54,7 +58,6 @@
             </intent-filter>
         </activity>
 
-        <!-- ✅ Уведомления -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>

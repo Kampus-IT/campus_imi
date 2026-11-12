@@ -1,3 +1,4 @@
+import '../utils/error_text.dart';
 import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
@@ -86,7 +87,7 @@ class _AdminImportCalendarScreenState extends State<AdminImportCalendarScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red)
+            SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red)
         );
       }
     } finally {
