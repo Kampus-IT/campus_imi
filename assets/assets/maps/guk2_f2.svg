@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 512" width="1700" height="512" xmlns:c2pa="http://c2pa.org/manifest">
+<title>СВФУ, Главный учебный корпус, ул. Кулаковского 42, блок 2 — 2 этаж</title>
+<rect id="background" width="1700" height="512" fill="#E6EBF1"/>
+<g id="floor">
+<path d="M56.8 56.8 L1643.2 56.8 L1643.2 304.3 L56.8 304.3 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M56.8 304.3 L235.3 304.3 L235.3 454.4 L56.8 454.4 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M1476.8 304.3 L1643.2 304.3 L1643.2 450.4 L1476.8 450.4 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M117.7 64.9 L158.2 64.9 L158.2 133.9 L117.7 133.9 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M1545.8 64.9 L1598.6 64.9 L1598.6 158.2 L1545.8 158.2 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M56.8 56.8 L1643.2 56.8 L1643.2 304.3 L56.8 304.3 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M56.8 304.3 L235.3 304.3 L235.3 454.4 L56.8 454.4 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M1476.8 304.3 L1643.2 304.3 L1643.2 450.4 L1476.8 450.4 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M117.7 64.9 L158.2 64.9 L158.2 133.9 L117.7 133.9 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M1545.8 64.9 L1598.6 64.9 L1598.6 158.2 L1545.8 158.2 Z" fill="#F8FAFD" stroke="none"/>
+</g>
+<g id="rooms">
+<path id="unit-1" d="M56.8 304.3 L235.3 304.3 L235.3 344.9 L56.8 344.9 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-243" d="M101.4 344.9 L215.0 344.9 L215.0 454.4 L101.4 454.4 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-2" d="M1476.8 304.3 L1643.2 304.3 L1643.2 344.9 L1476.8 344.9 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-219" d="M1501.2 344.9 L1598.6 344.9 L1598.6 450.4 L1501.2 450.4 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-234" d="M158.2 56.8 L336.8 56.8 L336.8 162.3 L158.2 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-232" d="M336.8 56.8 L442.2 56.8 L442.2 162.3 L336.8 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-230" d="M442.2 56.8 L503.1 56.8 L503.1 162.3 L442.2 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-228" d="M503.1 56.8 L559.9 56.8 L559.9 162.3 L503.1 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-226" d="M559.9 56.8 L665.4 56.8 L665.4 162.3 L559.9 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-224" d="M665.4 56.8 L734.4 56.8 L734.4 162.3 L665.4 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-3" d="M734.4 56.8 L787.1 56.8 L787.1 162.3 L734.4 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-4" d="M941.3 56.8 L1002.1 56.8 L1002.1 162.3 L941.3 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-222" d="M1002.1 56.8 L1067.1 56.8 L1067.1 162.3 L1002.1 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-220" d="M1067.1 56.8 L1209.1 56.8 L1209.1 162.3 L1067.1 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-218" d="M1209.1 56.8 L1274.0 56.8 L1274.0 162.3 L1209.1 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-216" d="M1274.0 56.8 L1452.5 56.8 L1452.5 162.3 L1274.0 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-5" d="M1452.5 56.8 L1541.8 56.8 L1541.8 162.3 L1452.5 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-241a" d="M154.2 206.9 L219.1 206.9 L219.1 304.3 L154.2 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-241" d="M219.1 206.9 L365.2 206.9 L365.2 304.3 L219.1 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-239" d="M365.2 206.9 L446.3 206.9 L446.3 304.3 L365.2 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-237" d="M446.3 206.9 L693.8 206.9 L693.8 304.3 L446.3 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-235" d="M693.8 206.9 L738.4 206.9 L738.4 304.3 L693.8 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-233" d="M738.4 206.9 L835.8 206.9 L835.8 304.3 L738.4 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-233a" d="M835.8 206.9 L900.7 206.9 L900.7 304.3 L835.8 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-231" d="M900.7 206.9 L998.1 206.9 L998.1 304.3 L900.7 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-229" d="M998.1 206.9 L1111.7 206.9 L1111.7 304.3 L998.1 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-227" d="M1111.7 206.9 L1201.0 206.9 L1201.0 304.3 L1111.7 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-225" d="M1201.0 206.9 L1282.1 206.9 L1282.1 304.3 L1201.0 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-223" d="M1282.1 206.9 L1403.8 206.9 L1403.8 304.3 L1282.1 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-221" d="M1403.8 206.9 L1476.8 206.9 L1476.8 304.3 L1403.8 304.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="stairs">
+<path id="stairs-1" d="M117.7 64.9 L158.2 64.9 L158.2 133.9 L117.7 133.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="stairs-2" d="M1545.8 64.9 L1598.6 64.9 L1598.6 158.2 L1545.8 158.2 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="stairs-3" d="M787.1 56.8 L941.3 56.8 L941.3 162.3 L787.1 162.3 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="doors">
+<line id="door-243" x1="149.2" y1="344.9" x2="167.2" y2="344.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-219" x1="1540.9" y1="344.9" x2="1558.9" y2="344.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-234" x1="256.5" y1="162.3" x2="238.5" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-232" x1="398.5" y1="162.3" x2="380.5" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-230" x1="481.7" y1="162.3" x2="463.7" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-228" x1="540.5" y1="162.3" x2="522.5" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-226" x1="621.6" y1="162.3" x2="603.6" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-224" x1="708.9" y1="162.3" x2="690.9" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-222" x1="1043.6" y1="162.3" x2="1025.6" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-220" x1="1147.1" y1="162.3" x2="1129.1" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-218" x1="1250.5" y1="162.3" x2="1232.5" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-216" x1="1372.2" y1="162.3" x2="1354.2" y2="162.3" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-241a" x1="177.6" y1="206.9" x2="195.6" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-241" x1="283.1" y1="206.9" x2="301.1" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-239" x1="396.7" y1="206.9" x2="414.7" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-237" x1="561.0" y1="206.9" x2="579.0" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-235" x1="707.1" y1="206.9" x2="725.1" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-233" x1="778.1" y1="206.9" x2="796.1" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-233a" x1="859.3" y1="206.9" x2="877.3" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-231" x1="940.4" y1="206.9" x2="958.4" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-229" x1="1045.9" y1="206.9" x2="1063.9" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-227" x1="1147.3" y1="206.9" x2="1165.3" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-225" x1="1232.5" y1="206.9" x2="1250.5" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-223" x1="1334.0" y1="206.9" x2="1352.0" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-221" x1="1431.3" y1="206.9" x2="1449.3" y2="206.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+</g>
+<g id="icons">
+<polyline id="icon-stairs-1" points="127.9,108.4 127.9,102.4 134.9,102.4 134.9,96.4 141.9,96.4 141.9,90.4 148.9,90.4" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="icon-stairs-2" points="1562.2,120.6 1562.2,114.6 1569.2,114.6 1569.2,108.6 1576.2,108.6 1576.2,102.6 1583.2,102.6" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="icon-stairs-3" points="854.2,118.5 854.2,112.5 861.2,112.5 861.2,106.5 868.2,106.5 868.2,100.5 875.2,100.5" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="nav">
+<circle id="node-stairs-1" cx="137.9" cy="99.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-stairs-2" cx="1572.2" cy="111.6" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-243" cx="158.2" cy="344.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-219" cx="1549.9" cy="344.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-234" cx="247.5" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-232" cx="389.5" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-230" cx="472.7" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-228" cx="531.5" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-226" cx="612.6" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-224" cx="699.9" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-stairs-3" cx="864.2" cy="109.5" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-222" cx="1034.6" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-220" cx="1138.1" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-218" cx="1241.5" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-216" cx="1363.2" cy="162.3" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-241a" cx="186.6" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-241" cx="292.1" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-239" cx="405.7" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-237" cx="570.0" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-235" cx="716.1" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-233" cx="787.1" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-233a" cx="868.3" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-231" cx="949.4" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-229" cx="1054.9" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-227" cx="1156.3" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-225" cx="1241.5" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-223" cx="1343.0" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-221" cx="1440.3" cy="206.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+</g>
+<g id="labels">
+<text x="158.2" y="399.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">243</text>
+<text x="1549.9" y="397.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">219</text>
+<text x="247.5" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">234</text>
+<text x="389.5" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">232</text>
+<text x="472.7" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">230</text>
+<text x="531.5" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 531.5 109.5)">228</text>
+<text x="612.6" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">226</text>
+<text x="699.9" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">224</text>
+<text x="1034.6" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">222</text>
+<text x="1138.1" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">220</text>
+<text x="1241.5" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">218</text>
+<text x="1363.2" y="109.5" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">216</text>
+<text x="186.6" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">241a</text>
+<text x="292.1" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">241</text>
+<text x="405.7" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">239</text>
+<text x="570.0" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">237</text>
+<text x="716.1" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 716.1 255.6)">235</text>
+<text x="787.1" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">233</text>
+<text x="868.3" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">233a</text>
+<text x="949.4" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">231</text>
+<text x="1054.9" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">229</text>
+<text x="1156.3" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">227</text>
+<text x="1241.5" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">225</text>
+<text x="1343.0" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">223</text>
+<text x="1440.3" y="255.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">221</text>
+</g>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYToyNzgxYzA2NS00NjE2LTQ0MTctYTZlMC03ZmU3NTMzNmI4MzUAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaMk9EruXeC+3OBmWiK6VN2wAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo3NTljNGE1My00ZDQ2LTQyYTktOTk3ZS0wZWY0NGM4MTlmMzRscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNopkuXAlzdw7ljvLEzWzV2dwAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgglfUJnum5Jj3vJCYYPEymGcLnBuVli+I7RVpeyypW1e6kZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaJXX/OPRMXuUUUwmfoyPfcAAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYICKen7f0Lr+zkTPZN9J0346deyDLJmSw2oHN5oIqC8DKZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GUNqZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjI3ODFjMDY1LTQ2MTYtNDQxNy1hNmUwLTdmZTc1MzM2YjgzNS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjZiZjU5MThiLTk3YTctNGQwMi1hMWIxLTJiZjFlOWU3ODg3ZXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCV9Qme6bkmPe8kJhg8TKYZwucG5WWL4jtFWl7LKlbV7qJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFgg9GY8yzDwJgKwefcqOTSBZ+2vb6saYvou6MPJSXkOITmiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggys+JALIgJpOeYw/MjVxLRwt0uFmh0MxnwpjOEW+98Cx0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQKyXyqixD6kmx1Wb+G2xic7caomHK87Cb2bGsm0gLGskyIQFmSOaLnwEnW5JKl0onttpVmtnGzyeZDRfONw4Png=</c2pa:manifest></metadata></svg>

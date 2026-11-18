@@ -1,0 +1,156 @@
+{
+ "бойлерная-1": {
+  "number": "бойлерная-1",
+  "floor": 1,
+  "type": "classroom",
+  "title": "бойлерная-1",
+  "description": ""
+ },
+ "пост-2": {
+  "number": "пост-2",
+  "floor": 1,
+  "type": "classroom",
+  "title": "пост-2",
+  "description": ""
+ },
+ "эл-щит": {
+  "number": "эл-щит",
+  "floor": 1,
+  "type": "classroom",
+  "title": "эл-щит",
+  "description": ""
+ },
+ "тех-пом": {
+  "number": "тех-пом",
+  "floor": 1,
+  "type": "classroom",
+  "title": "тех-пом",
+  "description": ""
+ },
+ "беговая-дорожка": {
+  "number": "беговая-дорожка",
+  "floor": 1,
+  "type": "classroom",
+  "title": "беговая-дорожка",
+  "description": ""
+ },
+ "гардероб": {
+  "number": "гардероб",
+  "floor": 1,
+  "type": "classroom",
+  "title": "гардероб",
+  "description": ""
+ },
+ "проход": {
+  "number": "проход",
+  "floor": 1,
+  "type": "classroom",
+  "title": "проход",
+  "description": ""
+ },
+ "сауна": {
+  "number": "сауна",
+  "floor": 1,
+  "type": "classroom",
+  "title": "сауна",
+  "description": ""
+ },
+ "пост-1": {
+  "number": "пост-1",
+  "floor": 1,
+  "type": "classroom",
+  "title": "пост-1",
+  "description": ""
+ },
+ "вестибюль-запад": {
+  "number": "вестибюль-запад",
+  "floor": 1,
+  "type": "classroom",
+  "title": "вестибюль-запад",
+  "description": ""
+ },
+ "107": {
+  "number": "107",
+  "floor": 1,
+  "type": "classroom",
+  "title": "107",
+  "description": ""
+ },
+ "подсобка": {
+  "number": "подсобка",
+  "floor": 1,
+  "type": "classroom",
+  "title": "подсобка",
+  "description": ""
+ },
+ "105": {
+  "number": "105",
+  "floor": 1,
+  "type": "classroom",
+  "title": "105",
+  "description": ""
+ },
+ "104": {
+  "number": "104",
+  "floor": 1,
+  "type": "classroom",
+  "title": "104",
+  "description": ""
+ },
+ "гардероб-2": {
+  "number": "гардероб-2",
+  "floor": 1,
+  "type": "classroom",
+  "title": "гардероб-2",
+  "description": ""
+ },
+ "101": {
+  "number": "101",
+  "floor": 1,
+  "type": "classroom",
+  "title": "101",
+  "description": ""
+ },
+ "102": {
+  "number": "102",
+  "floor": 1,
+  "type": "classroom",
+  "title": "102",
+  "description": ""
+ },
+ "санузел": {
+  "number": "санузел",
+  "floor": 1,
+  "type": "classroom",
+  "title": "санузел",
+  "description": ""
+ },
+ "103": {
+  "number": "103",
+  "floor": 1,
+  "type": "classroom",
+  "title": "103",
+  "description": ""
+ },
+ "холл-выход": {
+  "number": "холл-выход",
+  "floor": 1,
+  "type": "classroom",
+  "title": "холл-выход",
+  "description": ""
+ },
+ "ступени-запад": {
+  "number": "ступени-запад",
+  "floor": 1,
+  "type": "classroom",
+  "title": "ступени-запад",
+  "description": ""
+ },
+ "ступени-выход": {
+  "number": "ступени-выход",
+  "floor": 1,
+  "type": "classroom",
+  "title": "ступени-выход",
+  "description": ""
+ }
+}

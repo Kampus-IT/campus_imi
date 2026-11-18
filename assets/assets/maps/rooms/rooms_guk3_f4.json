@@ -1,0 +1,86 @@
+{
+ "401": {
+  "number": "401",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 401",
+  "description": ""
+ },
+ "424": {
+  "number": "424",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 424",
+  "description": ""
+ },
+ "424a": {
+  "number": "424a",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 424a",
+  "description": ""
+ },
+ "422": {
+  "number": "422",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 422",
+  "description": ""
+ },
+ "420": {
+  "number": "420",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 420",
+  "description": ""
+ },
+ "418": {
+  "number": "418",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 418",
+  "description": ""
+ },
+ "416": {
+  "number": "416",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 416",
+  "description": ""
+ },
+ "435": {
+  "number": "435",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 435",
+  "description": ""
+ },
+ "431": {
+  "number": "431",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 431",
+  "description": ""
+ },
+ "429": {
+  "number": "429",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 429",
+  "description": ""
+ },
+ "427": {
+  "number": "427",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 427",
+  "description": ""
+ },
+ "425": {
+  "number": "425",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 425",
+  "description": ""
+ }
+}

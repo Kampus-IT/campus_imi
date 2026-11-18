@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="1100" height="480">
+<title>СВФУ, Технологический институт (КИТ), ул. Строителей 8 — 1 этаж</title>
+<rect id="background" width="1100" height="480" fill="#E6EBF1"/>
+<g id="floor">
+<path id="floor-main" d="M75.0 38.0 L890.0 38.0 L890.0 372.0 L75.0 372.0 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10"/>
+<path id="floor-vestibule" d="M45.0 130.0 L90.0 130.0 L90.0 220.0 L45.0 220.0 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10"/>
+<path d="M75.0 38.0 L890.0 38.0 L890.0 372.0 L75.0 372.0 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M45.0 130.0 L90.0 130.0 L90.0 220.0 L45.0 220.0 Z" fill="#F8FAFD" stroke="none"/>
+</g>
+<g id="rooms">
+<path id="unit-passage" d="M890.0 185.0 L1050.0 200.0 L1050.0 250.0 L890.0 225.0 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-porch" d="M740.0 372.0 L835.0 372.0 L835.0 435.0 L740.0 435.0 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-vest" d="M45.0 130.0 L90.0 130.0 L90.0 220.0 L45.0 220.0 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-1" d="M133.0 48.0 L225.0 48.0 L225.0 185.0 L133.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-2" d="M225.0 48.0 L318.0 48.0 L318.0 185.0 L225.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-3" d="M318.0 48.0 L495.0 48.0 L495.0 185.0 L318.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-4" d="M495.0 48.0 L580.0 48.0 L580.0 185.0 L495.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-5" d="M580.0 48.0 L668.0 48.0 L668.0 185.0 L580.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-6" d="M668.0 48.0 L758.0 48.0 L758.0 185.0 L668.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-7" d="M758.0 48.0 L828.0 48.0 L828.0 185.0 L758.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-ne" d="M828.0 48.0 L890.0 48.0 L890.0 185.0 L828.0 185.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-sw" d="M75.0 225.0 L113.0 225.0 L113.0 368.0 L75.0 368.0 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-13" d="M113.0 225.0 L205.0 225.0 L205.0 368.0 L113.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-12" d="M205.0 225.0 L282.0 225.0 L282.0 368.0 L205.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-12a" d="M282.0 225.0 L310.0 225.0 L310.0 310.0 L282.0 310.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-11" d="M310.0 225.0 L370.0 225.0 L370.0 368.0 L310.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-10" d="M370.0 225.0 L495.0 225.0 L495.0 368.0 L370.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-9" d="M495.0 225.0 L585.0 225.0 L585.0 368.0 L495.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-8" d="M585.0 225.0 L750.0 225.0 L750.0 368.0 L585.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-8a" d="M750.0 225.0 L805.0 225.0 L805.0 368.0 L750.0 368.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="stairs">
+<path id="stairs-1" d="M90.0 45.0 L132.0 45.0 L132.0 135.0 L90.0 135.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="stairs-2" d="M825.0 258.0 L885.0 258.0 L885.0 340.0 L825.0 340.0 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="doors">
+<line id="door-1" x1="188.0" y1="185.0" x2="170.0" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-2" x1="280.5" y1="185.0" x2="262.5" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-3" x1="415.5" y1="185.0" x2="397.5" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-4" x1="546.5" y1="185.0" x2="528.5" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-5" x1="633.0" y1="185.0" x2="615.0" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-6" x1="722.0" y1="185.0" x2="704.0" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-7" x1="802.0" y1="185.0" x2="784.0" y2="185.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-13" x1="150.0" y1="225.0" x2="168.0" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-12" x1="234.5" y1="225.0" x2="252.5" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-12a" x1="287.0" y1="225.0" x2="305.0" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-11" x1="331.0" y1="225.0" x2="349.0" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-10" x1="423.5" y1="225.0" x2="441.5" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-9" x1="531.0" y1="225.0" x2="549.0" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-8" x1="658.5" y1="225.0" x2="676.5" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-8a" x1="768.5" y1="225.0" x2="786.5" y2="225.0" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+</g>
+<g id="icons">
+<polyline id="icon-stairs-1" points="101.0,99.0 101.0,93.0 108.0,93.0 108.0,87.0 115.0,87.0 115.0,81.0 122.0,81.0" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="icon-stairs-2" points="845.0,308.0 845.0,302.0 852.0,302.0 852.0,296.0 859.0,296.0 859.0,290.0 866.0,290.0" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="nav">
+<circle id="node-stairs-1" cx="111.0" cy="90.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-stairs-2" cx="855.0" cy="299.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-1" cx="179.0" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-2" cx="271.5" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-3" cx="406.5" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-4" cx="537.5" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-5" cx="624.0" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-6" cx="713.0" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-7" cx="793.0" cy="185.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-13" cx="159.0" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-12" cx="243.5" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-12a" cx="296.0" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-11" cx="340.0" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-10" cx="432.5" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-9" cx="540.0" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-8" cx="667.5" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+<circle id="node-door-8a" cx="777.5" cy="225.0" r="4" fill="#2F7FEB" fill-opacity="0"/>
+</g>
+<g id="labels">
+<text x="970.0" y="217.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">Переход</text>
+<text x="787.5" y="403.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">Вход</text>
+<text x="67.5" y="175.0" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90.0 67.5 175.0)">Вход</text>
+<text x="179.0" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">1</text>
+<text x="271.5" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">2</text>
+<text x="406.5" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">3</text>
+<text x="537.5" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">4</text>
+<text x="624.0" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">5</text>
+<text x="713.0" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">6</text>
+<text x="793.0" y="116.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">7</text>
+<text x="159.0" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">13</text>
+<text x="243.5" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">12</text>
+<text x="296.0" y="267.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90.0 296.0 267.5)">12a</text>
+<text x="340.0" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">11</text>
+<text x="432.5" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">10</text>
+<text x="540.0" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">9</text>
+<text x="667.5" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">8</text>
+<text x="777.5" y="296.5" font-family="Arial, sans-serif" font-size="22" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">8a</text>
+</g>
+</svg>
