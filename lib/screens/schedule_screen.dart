@@ -302,8 +302,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.zero, // Убираем дефолтные отступы списка
       children: [
         Padding(
+          // Возвращаем аккуратный отступ сверху (12)
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: AppSegmented(
             labels: const ['Эта неделя', 'Следующая'],
