@@ -1,3 +1,4 @@
+// lib/screens/admin_import_schedule_screen.dart
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import '../services/schedule_import_service.dart';
 import '../services/svfu_schedule_service.dart';
 import '../theme/app_theme.dart';
 import '../models/department_model.dart';
+import '../widgets/app_ui.dart';
 
 class AdminImportScheduleScreen extends StatefulWidget {
   const AdminImportScheduleScreen({super.key});
@@ -78,7 +80,18 @@ class _AdminImportScheduleScreenState extends State<AdminImportScheduleScreen> {
     }
   }
 
-  // ✅ НОВЫЙ МЕТОД: Обновление подгрупп в уже существующей базе
+  void _snack(String text, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: error ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ✅ Обновление подгрупп в уже существующей базе
   Future<void> _migrateSubgroups() async {
     setState(() => _isMigratingSubgroups = true);
     _snack('⏳ Обновляем подгруппы в базе...');
@@ -95,7 +108,6 @@ class _AdminImportScheduleScreenState extends State<AdminImportScheduleScreen> {
         final data = doc.data();
         final subject = (data['subject'] ?? '').toString();
 
-        // Ищем "1пг", "2пг", "п/г 1" и т.д.
         final subMatch = RegExp(r'([12])\s*(?:пг|п/г|пр|пн)', caseSensitive: false).firstMatch(subject);
 
         if (subMatch != null) {
@@ -199,7 +211,7 @@ class _AdminImportScheduleScreenState extends State<AdminImportScheduleScreen> {
                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
                 ElevatedButton(
                   onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
-                  child: const Text('Начать'),
+                  child: const Text('Синхронизировать'),
                 ),
               ],
             );
@@ -208,13 +220,13 @@ class _AdminImportScheduleScreenState extends State<AdminImportScheduleScreen> {
       },
     );
 
-    if (facultyCode == null || facultyCode.isEmpty) return;
+    if (facultyCode == null) return;
 
     setState(() {
       _isSyncingFaculty = true;
-      _currentSyncingGroup = 'Подготовка...';
       _facultyDone = 0;
       _facultyTotal = 0;
+      _currentSyncingGroup = '';
     });
 
     try {
@@ -231,387 +243,210 @@ class _AdminImportScheduleScreenState extends State<AdminImportScheduleScreen> {
           }
         },
       );
-      if (mounted) _snack('✅ Факультет $facultyCode: загружено $count пар');
+      if (mounted) _snack('✅ Импортировано $count пар для факультета $facultyCode');
     } catch (e) {
       if (mounted) _snack('$e', error: true);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSyncingFaculty = false;
-          _currentSyncingGroup = '';
-        });
-      }
+      if (mounted) setState(() => _isSyncingFaculty = false);
     }
   }
 
-  // --- Excel методы ---
-  Future<void> _pickFile() async {
-    final picked = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx'],
-      withData: true,
-    );
-    if (picked == null || picked.files.single.bytes == null) return;
-
-    setState(() { _parsing = true; _result = null; _fileName = picked.files.single.name; });
-
+  // --- Excel импорт ---
+  Future<void> _pickExcel() async {
     try {
-      final bytes = picked.files.single.bytes!;
-      final result = await Future.microtask(
-            () => ExcelScheduleParser.parse(Uint8List.fromList(bytes)),
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+        withData: true,
       );
-      if (!mounted) return;
-      setState(() { _result = result; _parsing = false; });
+      if (res == null || res.files.isEmpty) return;
+      final bytes = res.files.first.bytes;
+      if (bytes == null) { _snack('Не удалось прочитать файл', error: true); return; }
+
+      setState(() { _parsing = true; _result = null; _fileName = res.files.first.name; });
+      final result = ExcelScheduleParser.parse(bytes);
+      if (mounted) setState(() => _result = result);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _parsing = false);
-      _snack('Ошибка чтения файла: $e', error: true);
+      if (mounted) _snack('$e', error: true);
+    } finally {
+      if (mounted) setState(() => _parsing = false);
     }
   }
 
-  Future<void> _import() async {
-    final r = _result;
-    if (r == null || r.lessons.isEmpty) return;
-    if (_selectedDeptId == null) {
-      _snack('Пожалуйста, выберите подразделение для этих групп', error: true);
-      return;
-    }
+  Future<void> _importExcel() async {
+    if (_selectedDeptId == null) { _snack('Выберите подразделение', error: true); return; }
+    final res = _result;
+    if (res == null || res.lessons.isEmpty) { _snack('Нет данных для импорта', error: true); return; }
 
-    setState(() { _importing = true; _done = 0; _total = r.lessons.length; });
-
+    setState(() { _importing = true; _done = 0; _total = res.lessons.length; });
     try {
       final count = await ScheduleImportService().importLessons(
-        r.lessons,
-        onProgress: (d, t) {
-          if (mounted) setState(() { _done = d; _total = t; });
+        res.lessons,
+        onProgress: (done, total) {
+          if (mounted) setState(() { _done = done; _total = total; });
         },
       );
-
-      final uniqueGroups = r.lessons.map((l) => l.group).toSet();
-      for (String groupName in uniqueGroups) {
-        final groupRef = FirebaseFirestore.instance.collection('groups').doc(groupName);
-        final existingDoc = await groupRef.get();
-        if (existingDoc.exists && existingDoc.data()?['departmentId'] != null) continue;
-        await groupRef.set({
-          'name': groupName,
-          'departmentId': _selectedDeptId,
-        }, SetOptions(merge: true));
-      }
-
-      if (!mounted) return;
-      _snack('Импортировано $count пар. Группы привязаны к подразделению.');
-      setState(() { _importing = false; _result = null; _fileName = null; });
+      if (mounted) _snack('✅ Импортировано $count пар');
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _importing = false);
-      _snack('Ошибка импорта: $e', error: true);
+      if (mounted) _snack('$e', error: true);
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
-  }
-
-  void _snack(String m, {bool error = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(m),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: error ? Colors.red : AppTheme.primaryNavy,
-    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Импорт расписания')),
-      backgroundColor: AppTheme.backgroundGray,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===== БЛОК СВФУ =====
-          Card(
-            color: Colors.blue.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Colors.blueAccent),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('🔥 Автоматическая синхронизация',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueAccent)),
-                  const SizedBox(height: 8),
-                  const Text('Скачивает актуальное расписание напрямую с сайта СВФУ.',
-                      style: TextStyle(fontSize: 13)),
-                  const SizedBox(height: 16),
+          _buildDepartmentSelector(theme),
+          const SizedBox(height: 16),
 
-                  // 1. Выбор подразделения
-                  const Text('1. Выберите подразделение',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const LinearProgressIndicator();
-                      final depts = snapshot.data!.docs.map((d) =>
-                          Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
-
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Подразделение',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        value: _selectedDeptId,
-                        isExpanded: true,
-                        items: depts.map((d) => DropdownMenuItem(
-                          value: d.id,
-                          child: Text('${d.shortName} (${d.name})',
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                        )).toList(),
-                        onChanged: (v) => setState(() => _selectedDeptId = v),
-                      );
-                    },
+          // --- Импорт из СВФУ ---
+          _buildSectionTitle('Импорт из API СВФУ'),
+          const SizedBox(height: 8),
+          if (_isLoadingGroups)
+            const Center(child: CircularProgressIndicator())
+          else ...[
+            _buildGroupSelector(theme),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSyncing ? null : _syncFromSvfu,
+                    icon: _isSyncing
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.download),
+                    label: Text(_isSyncing ? '$_done / $_total' : 'Импортировать группу'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryNavy,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(50),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // 2. Выбор группы
-                  const Text('2. Выберите группу (для одной группы)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
-
-                  if (_isLoadingGroups)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    ))
-                  else ...[
-                    Autocomplete<SvfuGroup>(
-                      displayStringForOption: (g) => g.cleanName,
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) return _allGroups.take(10);
-                        return _allGroups.where((g) =>
-                            g.cleanName.toLowerCase().contains(textEditingValue.text.toLowerCase())
-                        );
-                      },
-                      onSelected: (g) => setState(() => _selectedGroup = g),
-                      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                        return TextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Поиск группы (например, Б-ПИГМУ-24)',
-                            border: OutlineInputBorder(),
-                            filled: true,
-                            fillColor: Colors.white,
-                            suffixIcon: Icon(Icons.search),
-                          ),
-                        );
-                      },
-                    ),
-
-                    if (_selectedGroup != null) ...[
-                      const SizedBox(height: 8),
-                      Text('Выбрано: ${_selectedGroup!.cleanName} (ID: ${_selectedGroup!.id})',
-                          style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-                    ],
-
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _isSyncing || _isSyncingFaculty || _isMigratingSubgroups || _selectedGroup == null || _selectedDeptId == null
-                          ? null
-                          : _syncFromSvfu,
-                      icon: _isSyncing
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.cloud_download),
-                      label: Text(_isSyncing
-                          ? (_total == 0 ? 'Синхронизация...' : 'День $_done из $_total')
-                          : 'Синхронизировать выбранную группу'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(52),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    const SizedBox(height: 12),
-
-                    // 3. Синхронизация факультета
-                    const Text('3. Или синхронизировать весь факультет',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: (_isSyncing || _isSyncingFaculty || _isMigratingSubgroups || _selectedDeptId == null)
-                          ? null
-                          : _syncFaculty,
-                      icon: _isSyncingFaculty
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.school),
-                      label: Text(_isSyncingFaculty
-                          ? '$_currentSyncingGroup ($_facultyDone из $_facultyTotal)'
-                          : 'Синхронизировать весь факультет'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(52),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 12),
-
-                    // 4. Миграция подгрупп
-                    const Text('4. Обновить старые данные (без скачивания)',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: _isSyncing || _isSyncingFaculty || _isMigratingSubgroups
-                          ? null
-                          : _migrateSubgroups,
-                      icon: _isMigratingSubgroups
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.auto_fix_high),
-                      label: Text(_isMigratingSubgroups
-                          ? 'Обновление...'
-                          : 'Обновить подгруппы в базе'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(52),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 16),
-
-          // ===== БЛОК EXCEL =====
-          const Text('Резервный импорт из Excel',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textMuted)),
-          const SizedBox(height: 8),
-          const Text('Используйте, если API СВФУ недоступно.',
-              style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
-          const SizedBox(height: 16),
-
-          const Text('1. К какому подразделению относятся эти группы?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const LinearProgressIndicator();
-              final depts = snapshot.data!.docs.map((d) =>
-                  Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
-
-              return DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Подразделение',
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: AppTheme.cardWhite,
                 ),
-                value: _selectedDeptId,
-                isExpanded: true,
-                items: depts.map((d) => DropdownMenuItem(
-                  value: d.id,
-                  child: Text('${d.shortName} (${d.name})',
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                )).toList(),
-                onChanged: (v) => setState(() => _selectedDeptId = v),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSyncingFaculty ? null : _syncFaculty,
+                    icon: _isSyncingFaculty
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.school),
+                    label: Text(_isSyncingFaculty ? '$_facultyDone / $_facultyTotal' : 'Импортировать факультет'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_isSyncingFaculty && _currentSyncingGroup.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Группа: $_currentSyncingGroup', style: const TextStyle(fontSize: 12)),
+          ],
 
-          const Text('2. Выберите файл .xlsx',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const Divider(height: 32),
+
+          // --- Импорт из Excel ---
+          _buildSectionTitle('Импорт из Excel'),
           const SizedBox(height: 8),
           ElevatedButton.icon(
-            onPressed: _parsing || _importing ? null : _pickFile,
-            icon: const Icon(Icons.upload_file),
-            label: Text(_fileName ?? 'Выбрать файл'),
+            onPressed: _parsing ? null : _pickExcel,
+            icon: _parsing
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.upload_file),
+            label: Text(_fileName ?? 'Выбрать .xlsx'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryNavy,
+              backgroundColor: AppTheme.accentBlue,
               foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(52),
+              minimumSize: const Size.fromHeight(50),
             ),
           ),
 
-          if (_parsing)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-
           if (_result != null) ...[
-            const SizedBox(height: 16),
-            _buildSummary(_result!),
             const SizedBox(height: 12),
-            if (_result!.lessons.isNotEmpty) ...[
-              if (_importing)
-                LinearProgressIndicator(value: _total == 0 ? null : _done / _total),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: _importing ? null : _import,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(52),
-                ),
-                child: Text(_importing
-                    ? 'Импорт $_done/$_total…'
-                    : 'Импортировать ${_result!.lessons.length} пар'),
-              ),
+            Text('Найдено ${_result!.lessons.length} пар', style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (_result!.errors.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text('Ошибок: ${_result!.errors.length}', style: const TextStyle(color: Colors.red, fontSize: 12)),
             ],
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _importing ? null : _importExcel,
+              icon: _importing
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save),
+              label: Text(_importing ? '$_done / $_total' : 'Импортировать в базу'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryNavy,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
           ],
+
+          const Divider(height: 32),
+
+          // --- Миграция подгрупп ---
+          _buildSectionTitle('Обслуживание базы'),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: _isMigratingSubgroups ? null : _migrateSubgroups,
+            icon: _isMigratingSubgroups
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.cleaning_services),
+            label: const Text('Обновить подгруппы в базе'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummary(ExcelParseResult r) {
-    final groups = r.lessons.map((l) => l.group).toSet().toList()..sort();
-    const _daysShort = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+  Widget _buildSectionTitle(String title) {
+    return Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: appMutedColor(context)));
+  }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Распознано пар: ${r.lessons.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Группы (${groups.length}): ${groups.join(", ")}',
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500)),
-            if (r.errors.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Ошибок: ${r.errors.length}', style: const TextStyle(color: Colors.red)),
-              ...r.errors.take(8).map((e) => Text('• $e', style: const TextStyle(fontSize: 12))),
-            ],
-            const SizedBox(height: 12),
-            const Text('Первые 10 пар:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            const SizedBox(height: 6),
-            ...r.lessons.take(10).map((l) => Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Text(
-                '${l.group} · ${_daysShort[l.dayIndex]} · '
-                    '${l.week == 0 ? "кажд." : l.week == 1 ? "нечёт." : "чёт."} · '
-                    '${l.time} · ${l.subject}',
-                style: const TextStyle(fontSize: 12),
-              ),
-            )),
-          ],
-        ),
-      ),
+  Widget _buildDepartmentSelector(ThemeData theme) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final depts = snapshot.data!.docs.map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
+        return DropdownButtonFormField<String>(
+          decoration: const InputDecoration(labelText: 'Подразделение (институт)', border: OutlineInputBorder()),
+          value: _selectedDeptId,
+          items: depts.map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName))).toList(),
+          onChanged: (v) => setState(() => _selectedDeptId = v),
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupSelector(ThemeData theme) {
+    final filtered = _allGroups.where((g) => g.name.isNotEmpty).toList();
+    return DropdownButtonFormField<SvfuGroup>(
+      decoration: const InputDecoration(labelText: 'Группа', border: OutlineInputBorder()),
+      value: _selectedGroup,
+      isExpanded: true,
+      items: filtered.take(500).map((g) => DropdownMenuItem(
+        value: g,
+        child: Text('${g.cleanName} (${g.course} курс)'),
+      )).toList(),
+      onChanged: (v) => setState(() => _selectedGroup = v),
     );
   }
 }

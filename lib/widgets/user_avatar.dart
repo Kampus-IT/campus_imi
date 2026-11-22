@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
+import '../theme/app_theme.dart';
 
 class UserAvatar extends StatelessWidget {
   final String? userId;
@@ -46,34 +47,60 @@ class UserAvatar extends StatelessWidget {
     final theme = Theme.of(context);
     ImageProvider? imageProvider;
 
-    final photoUrl = data['photoUrl'] as String?;
-    if (photoUrl != null && photoUrl.isNotEmpty) {
+    // ✅ 1. Ищем ссылку на картинку (проверяем все возможные варианты имен)
+    final photoUrl = data['photoUrl'] ?? data['avatarUrl'] ?? data['imageUrl'] ?? '';
+
+    if (photoUrl is String && photoUrl.startsWith('http')) {
       imageProvider = NetworkImage(photoUrl);
     } else {
-      final base64String = data['photoBase64'] as String?;
-      if (base64String != null && base64String.isNotEmpty) {
+      // ✅ 2. Если ссылки нет, ищем Base64 (тоже во всех полях)
+      final base64String = data['photoBase64'] ?? data['imageBase64'] ?? data['avatarBase64'] ?? '';
+
+      if (base64String is String && base64String.isNotEmpty) {
         try {
           imageProvider = MemoryImage(base64Decode(base64String));
         } catch (_) {}
       }
     }
 
-    final bgColor = backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1);
-    final iconColor = backgroundColor != null ? Colors.white : theme.colorScheme.primary;
+    // ✅ 3. Если картинки нет, берем имя и рисуем инициал
+    if (imageProvider == null) {
+      final name = data['name'] ?? data['fullName'] ?? '';
+      final initial = name.isNotEmpty ? name[0].toUpperCase() : null;
 
+      final bgColor = backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1);
+      final textColor = backgroundColor != null ? Colors.white : theme.colorScheme.primary;
+
+      if (initial != null) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: bgColor),
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: TextStyle(
+              fontSize: size * 0.45,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        );
+      }
+      // Если даже имени нет — показываем иконку
+      return _buildPlaceholder(context);
+    }
+
+    // Если картинка нашлась - показываем её
+    final bgColor = backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: bgColor,
-        image: imageProvider != null
-            ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-            : null,
+        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
       ),
-      child: imageProvider == null
-          ? Icon(icon, size: size * 0.6, color: iconColor)
-          : null,
     );
   }
 

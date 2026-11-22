@@ -70,7 +70,7 @@ class UserModel {
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       group: map['group'] ?? '',
-      institute: map['institute'] ?? 'ИМИ СВФУ',
+      institute: map['institute'] ?? 'Kampus-IT NEFU',
       role: parseRole(map['role']),
       unionPoints: int.tryParse(map['unionPoints']?.toString() ?? '0') ?? 0,
     );

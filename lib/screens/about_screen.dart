@@ -20,7 +20,7 @@ class AboutScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ✅ ЛОГОТИП (РОЮЗАК)
+          // ЛОГОТИП (РОЮЗАК)
           Center(
             child: Column(
               children: [
@@ -41,7 +41,7 @@ class AboutScreen extends StatelessWidget {
                         offset: const Offset(0, 8),
                       ),
                     ],
-                    // ✅ Указываем путь к вашему новому файлу icon.png
+                    //  Указываем путь к вашему новому файлу icon.png
                     image: const DecorationImage(
                       image: AssetImage('assets/images/icon.png'),
                       fit: BoxFit.cover,
@@ -50,7 +50,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'СВФУ Кампус',
+                  'Kampus-IT NEFU',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -101,9 +101,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Divider(color: theme.dividerColor),
                 const SizedBox(height: 8),
-                _ContactRow(icon: Icons.email_outlined, text: 'innikentiy.kirensky@yandex.ru'),
-                const SizedBox(height: 8),
-                _ContactRow(icon: Icons.phone_outlined, text: '+7 (924) 562-06-98'),
+                _ContactRow(icon: Icons.email_outlined, text: 'kampus-it@mail.ru'),
               ],
             ),
           ),
@@ -170,7 +168,8 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Копирование, распространение или модификация данного кода без письменного '
-                      'разрешения автора запрещены.',
+                      'разрешения автора запрещены.'
+                      'Вся информация взята из открытых источников доступная для студентов',
                   style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
                 ),
               ],

@@ -1,11 +1,11 @@
+// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'guest_screen.dart';
 import 'auth_screen.dart';
 import 'register_screen.dart';
-import 'about_screen.dart'; // ✅ Импортируем экран "О проекте"
-
-// ─── Вспомогательные классы ───
+import 'about_screen.dart';
+import 'institute_list_screen.dart'; // ✅ Импорт списка институтов
 
 class LogoBadge extends StatelessWidget {
   const LogoBadge({super.key});
@@ -84,8 +84,6 @@ class RoleButton extends StatelessWidget {
     );
   }
 }
-
-// ─── ОСНОВНОЙ ЭКРАН ───
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -166,7 +164,6 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const Spacer(flex: 3),
 
-                    // Один главный шаг и два вторичных
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -199,10 +196,11 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
+                    // ✅ ИЗМЕНЕНО: Теперь ведет на выбор института
                     TextButton(
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const GuestScreen()),
+                        MaterialPageRoute(builder: (_) => const InstituteListScreen()),
                       ),
                       child: Text(
                         'Продолжить как гость',
@@ -215,7 +213,6 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const Spacer(flex: 2),
 
-                    // ✅ НОВАЯ КНОПКА "О ПРОЕКТЕ"
                     TextButton.icon(
                       onPressed: () {
                         Navigator.push(

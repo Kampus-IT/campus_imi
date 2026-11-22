@@ -11,7 +11,7 @@ class Event {
   final String organizer;
   final String organizerId;
   final String organizerRole;
-  final String departmentId; // ✅ ПРИВЯЗКА К ПОДРАЗДЕЛЕНИЮ
+  final String departmentId;
   final String imageUrl;
   final String imageBase64;
   final List<String> participants;
@@ -32,7 +32,7 @@ class Event {
     required this.organizer,
     required this.organizerId,
     this.organizerRole = 'activist',
-    this.departmentId = '', // По умолчанию пусто (для всех)
+    this.departmentId = '',
     required this.imageUrl,
     this.imageBase64 = '',
     required this.participants,
@@ -77,7 +77,7 @@ class Event {
       organizer: map['organizer'] ?? '',
       organizerId: map['organizerId'] ?? '',
       organizerRole: map['organizerRole'] ?? 'activist',
-      departmentId: map['departmentId'] ?? '', // ✅
+      departmentId: map['departmentId'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
       imageBase64: map['imageBase64'] ?? '',
       participants: List<String>.from(map['participants'] ?? []),
@@ -100,7 +100,7 @@ class Event {
       'organizer': organizer,
       'organizerId': organizerId,
       'organizerRole': organizerRole,
-      'departmentId': departmentId, // ✅
+      'departmentId': departmentId,
       'imageUrl': imageUrl,
       'imageBase64': imageBase64,
       'participants': participants,

@@ -38,6 +38,9 @@ class FirestoreService {
   }
 
   // --- Lessons (Schedule) ---
+
+  /// Слушает все пары в реальном времени (для админки, если нужно live-обновление).
+  /// ⚠️ Может тратить много чтений, используйте только если это критично.
   Stream<List<Lesson>> getAllLessons() {
     return _db
         .collection('lessons')
@@ -47,6 +50,33 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs
         .map((doc) => Lesson.fromMap(doc.id, doc.data()))
         .toList());
+  }
+
+  /// ✅ Загружает все пары ОДИН раз (не слушает изменения).
+  /// Экономит чтения Firestore (1 запрос вместо бесконечных).
+  Future<List<Lesson>> getAllLessonsOnce() async {
+    final snap = await _db
+        .collection('lessons')
+        .orderBy('dayIndex')
+        .orderBy('time')
+        .get();
+    return snap.docs
+        .map((doc) => Lesson.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  /// ✅ Загружает пары конкретной группы ОДИН раз.
+  /// Ещё экономнее — читает только нужную группу, а не всё расписание.
+  Future<List<Lesson>> getLessonsByGroupOnce(String group) async {
+    final snap = await _db
+        .collection('lessons')
+        .where('group', isEqualTo: group)
+        .orderBy('dayIndex')
+        .orderBy('time')
+        .get();
+    return snap.docs
+        .map((doc) => Lesson.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
   Stream<List<Lesson>> getLessons(int dayIndex) {

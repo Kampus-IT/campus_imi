@@ -6,12 +6,13 @@ class NewsService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Stream<List<News>> getNews() {
+  Stream<List<News>> getNews({int limit = 20}) {
     return _db
         .collection('news')
         .orderBy('createdAt', descending: true)
+        .limit(limit)
         .snapshots()
-        .map((s) => s.docs.map((d) => News.fromMap(d.id, d.data())).toList());
+        .map((s) => s.docs.map((d) => News.fromMap(d.data(), d.id)).toList());
   }
 
   Future<String> addNews(News news) async {

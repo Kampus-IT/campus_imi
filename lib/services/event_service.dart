@@ -202,4 +202,11 @@ class EventService {
       return UserModel.parseRole(doc.data()?['role']);
     } catch (e) { return UserRole.student; }
   }
+  Future<List<Event>> getEventsOnce() async {
+    final snap = await _db
+        .collection('events')
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snap.docs.map((d) => Event.fromMap(d.id, d.data())).toList();
+  }
 }

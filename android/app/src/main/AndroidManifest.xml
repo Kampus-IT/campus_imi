@@ -13,22 +13,31 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:label="Campus IMI"
+        android:label="Kampus-IT NEFU"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round">
 
+        <!-- OneSignal App ID -->
         <meta-data
             android:name="com.onesignal.APP_ID"
             android:value="${onesignal_app_id}" />
 
-        <!-- ✅ Иконка для уведомлений (OneSignal) -->
+        <!-- ✅ OneSignal 5.x: иконка и цвет -->
         <meta-data
-            android:name="com.onesignal.NotificationSmallIcon"
-            android:value="ic_stat_notify" />
+            android:name="com.onesignal.NotificationServiceExtension.NotificationIcon"
+            android:resource="@drawable/ic_stat_notify" />
         <meta-data
-            android:name="com.onesignal.NotificationAccentColor.DEFAULT"
-            android:value="FF1A2A5E" />
+            android:name="com.onesignal.NotificationServiceExtension.NotificationAccentColor"
+            android:resource="@color/onesignal_notification_accent_color" />
+
+        <!-- ✅ Firebase FCM: иконка и цвет -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/onesignal_notification_accent_color" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

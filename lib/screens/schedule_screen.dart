@@ -1,3 +1,4 @@
+// lib/screens/schedule_screen.dart
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 import '../models/lesson.dart';
+import '../services/cache_service.dart';
 import '../services/schedule_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_ui.dart';
@@ -19,17 +21,21 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAliveClientMixin {
+class _ScheduleScreenState extends State<ScheduleScreen>
+    with AutomaticKeepAliveClientMixin {
   static const List<String> _dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
   int _selectedDay = 0;
   int _selectedWeek = 0;
   String _userGroup = '';
-  int? _userSubgroup; // <-- Храним подгруппу
+  int? _userSubgroup;
   bool _loading = true;
   bool _loadFailed = false;
   List<DateTime> _oddWeeks = [];
   Timer? _ticker;
+
+  List<Lesson>? _cachedLessons;
+  bool _isRefreshing = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -73,14 +79,74 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
     } catch (e) {
       debugPrint('Ошибка инициализации расписания: $e');
       if (!mounted) return;
-      setState(() { _loadFailed = true; _loading = false; });
+      setState(() {
+        _loadFailed = true;
+        _loading = false;
+      });
+    }
+  }
+
+  /// Загрузка расписания для конкретной группы.
+  /// Сначала кэш (мгновенно, 0 чтений), затем — Firestore, если кэш устарел.
+  Future<void> _loadLessons(String group, {bool forceRefresh = false}) async {
+    // 1. Кэш (только для этой группы!)
+    final cached = await CacheService.loadLessons(group);
+    if (cached.isNotEmpty && mounted) {
+      setState(() => _cachedLessons = cached);
+    }
+
+    // 2. Если кэш свежий и не просили forceRefresh — не идём в сеть
+    final isFresh = await CacheService.isLessonsFresh(group);
+    if (isFresh && cached.isNotEmpty && !forceRefresh) {
+      return;
+    }
+
+    // 3. Обновляем из Firestore
+    if (mounted) setState(() => _isRefreshing = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .where('group', isEqualTo: group)
+          .get();
+      final lessons =
+      snap.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
+
+      await CacheService.saveLessons(group, lessons);
+
+      if (mounted) setState(() => _cachedLessons = lessons);
+    } catch (e) {
+      debugPrint('Ошибка загрузки пар: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось обновить расписание')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    if (_userGroup.isEmpty) return;
+    await CacheService.invalidateLessons(_userGroup);
+    await _loadLessons(_userGroup, forceRefresh: true);
+    try {
+      await ScheduleService.rescheduleReminders(
+        _cachedLessons ?? [],
+        _oddWeeks,
+        userSubgroup: _userSubgroup,
+      );
+    } catch (e) {
+      debugPrint('rescheduleReminders: $e');
     }
   }
 
   List<DateTime> _weekDates() {
     final monday = ScheduleService.mondayOf(DateTime.now());
-    final start = DateTime(monday.year, monday.month, monday.day + _selectedWeek * 7);
-    return List.generate(6, (i) => DateTime(start.year, start.month, start.day + i));
+    final start =
+    DateTime(monday.year, monday.month, monday.day + _selectedWeek * 7);
+    return List.generate(
+        6, (i) => DateTime(start.year, start.month, start.day + i));
   }
 
   @override
@@ -109,7 +175,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
           child: Row(
             children: [
               if (!widget.embedded)
-                IconButton(icon: Icon(Icons.arrow_back, color: fg), tooltip: 'Назад', onPressed: () => Navigator.pop(context))
+                IconButton(
+                  icon: Icon(Icons.arrow_back, color: fg),
+                  tooltip: 'Назад',
+                  onPressed: () => Navigator.pop(context),
+                )
               else
                 const SizedBox(width: 16),
               Expanded(
@@ -117,15 +187,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Расписание', style: TextStyle(color: fg, fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text('Расписание',
+                        style: TextStyle(
+                            color: fg,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
                     if (_userGroup.isNotEmpty)
                       Text(
-                          'Группа $_userGroup${_userSubgroup != null ? ' · ${_userSubgroup} пг' : ''}',
-                          style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)
+                        'Группа $_userGroup${_userSubgroup != null ? ' · ${_userSubgroup} пг' : ''}',
+                        style: TextStyle(
+                            color: fg.withValues(alpha: 0.8), fontSize: 12),
                       ),
                   ],
                 ),
               ),
+              if (_isRefreshing)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child:
+                    CircularProgressIndicator(strokeWidth: 2, color: fg),
+                  ),
+                ),
             ],
           ),
         ),
@@ -146,9 +231,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
       );
     }
 
-    // ✅ Слушаем документ пользователя (группа + подгруппа)
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
       builder: (context, userSnapshot) {
         if (userSnapshot.hasError) {
           return AppErrorState(onRetry: () => setState(() {}));
@@ -159,17 +246,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
 
         final data = userSnapshot.data?.data();
         final group = ((data?['group'] as String?) ?? '').trim();
-        final subgroup = data?['subgroup'] as int?;
-
-        if (group != _userGroup || subgroup != _userSubgroup) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            setState(() {
-              _userGroup = group;
-              _userSubgroup = subgroup;
-            });
-          });
-        }
+        final subgroupRaw = data?['subgroup'];
+        final subgroup = subgroupRaw is int
+            ? subgroupRaw
+            : (subgroupRaw is num ? subgroupRaw.toInt() : null);
 
         if (group.isEmpty) {
           return const AppEmptyState(
@@ -179,19 +259,49 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
           );
         }
 
-        return _buildScheduleContent(context, group, subgroup);
+        if (group != _userGroup || subgroup != _userSubgroup) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              _userGroup = group;
+              _userSubgroup = subgroup;
+              _cachedLessons = null;
+            });
+            _loadLessons(group);
+          });
+        }
+
+        if (_cachedLessons == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: _buildScheduleContent(context, group, subgroup),
+        );
       },
     );
   }
 
-  Widget _buildScheduleContent(BuildContext context, String group, int? subgroup) {
+  Widget _buildScheduleContent(
+      BuildContext context, String group, int? subgroup) {
     final dates = _weekDates();
     final weekNum = ScheduleService.weekNumber(dates.first, _oddWeeks);
     final rangeFmt = DateFormat('d MMMM', 'ru_RU');
-    final rangeText = '${DateFormat('d', 'ru_RU').format(dates.first)}–${rangeFmt.format(dates.last)} · ${weekNum == 1 ? 'нечётная' : 'чётная'} неделя';
+    final rangeText =
+        '${DateFormat('d', 'ru_RU').format(dates.first)}–${rangeFmt.format(dates.last)} · ${weekNum == 1 ? 'нечётная' : 'чётная'} неделя';
     final selectedDate = dates[_selectedDay.clamp(0, dates.length - 1)];
 
-    return Column(
+    final all = _cachedLessons!;
+    final lessons = ScheduleService.lessonsForDate(
+      all,
+      selectedDate,
+      _oddWeeks,
+      userSubgroup: subgroup,
+    );
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -205,7 +315,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(rangeText, style: TextStyle(fontSize: 12, color: appMutedColor(context))),
+            child: Text(rangeText,
+                style: TextStyle(
+                    fontSize: 12, color: appMutedColor(context))),
           ),
         ),
         _buildDayStrip(context, dates),
@@ -223,56 +335,44 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
             ),
           ),
         ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance.collection('lessons').where('group', isEqualTo: group).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) return AppErrorState(onRetry: () => setState(() {}));
-              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-              final all = snapshot.data!.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
-
-              // ✅ Передаем подгруппу для фильтрации
-              final lessons = ScheduleService.lessonsForDate(
-                all,
-                selectedDate,
-                _oddWeeks,
-                userSubgroup: subgroup,
-              );
-
-              if (lessons.isEmpty) {
-                return const AppEmptyState(
-                  icon: Icons.free_breakfast_outlined,
-                  title: 'Пар нет',
-                  message: 'Можно отдохнуть',
-                );
-              }
-
-              final now = DateTime.now();
-              final isToday = ScheduleService.dateOnly(selectedDate) == ScheduleService.dateOnly(now);
-
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                itemCount: lessons.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final lesson = lessons[i];
-                  bool isNow = false, isPast = false;
-                  if (isToday) {
-                    final occ = ScheduleService.occurrenceFor(lesson, selectedDate);
-                    if (occ != null) {
-                      isNow = occ.isActiveAt(now);
-                      isPast = !isNow && occ.end.isBefore(now);
-                    }
-                  }
-                  return LessonTile(lesson: lesson, isNow: isNow, isPast: isPast);
-                },
-              );
-            },
+        if (lessons.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 48),
+            child: AppEmptyState(
+              icon: Icons.free_breakfast_outlined,
+              title: 'Пар нет',
+              message: 'Можно отдохнуть',
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: [
+                for (int i = 0; i < lessons.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _buildLessonTile(lessons[i], selectedDate),
+                ],
+              ],
+            ),
           ),
-        ),
       ],
     );
+  }
+
+  Widget _buildLessonTile(Lesson lesson, DateTime selectedDate) {
+    final now = DateTime.now();
+    final isToday = ScheduleService.dateOnly(selectedDate) ==
+        ScheduleService.dateOnly(now);
+    bool isNow = false, isPast = false;
+    if (isToday) {
+      final occ = ScheduleService.occurrenceFor(lesson, selectedDate);
+      if (occ != null) {
+        isNow = occ.isActiveAt(now);
+        isPast = !isNow && occ.end.isBefore(now);
+      }
+    }
+    return LessonTile(lesson: lesson, isNow: isNow, isPast: isPast);
   }
 
   Widget _buildDayStrip(BuildContext context, List<DateTime> dates) {
@@ -304,16 +404,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_dayNames[i], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? selectedFg : appMutedColor(context))),
+                      Text(_dayNames[i],
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? selectedFg
+                                  : appMutedColor(context))),
                       const SizedBox(height: 2),
-                      Text('${dates[i].day}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: selected ? selectedFg : Theme.of(context).textTheme.bodyMedium?.color)),
+                      Text('${dates[i].day}',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: selected
+                                  ? selectedFg
+                                  : Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color)),
                       const SizedBox(height: 2),
                       Container(
                         width: 5,
                         height: 5,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isToday ? (selected ? selectedFg : appAccentColor(context)) : Colors.transparent,
+                          color: isToday
+                              ? (selected
+                              ? selectedFg
+                              : appAccentColor(context))
+                              : Colors.transparent,
                         ),
                       ),
                     ],

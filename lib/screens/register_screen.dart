@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../models/department_model.dart';
 import '../theme/app_theme.dart';
 import '../utils/validators.dart';
 import '../widgets/app_ui.dart';
@@ -21,10 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  String? _selectedDeptId;
-  String? _selectedGroup;
-  int _calculatedCourse = 1;
+  final _groupCodeController = TextEditingController(); // ✅ Контроллер для секретного кода
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -42,6 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _groupCodeController.dispose(); // ✅ Очищаем контроллер кода
     super.dispose();
   }
 
@@ -95,10 +92,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedDeptId == null || _selectedGroup == null) {
-      _snack('Выберите подразделение и группу');
+
+    final groupCode = _groupCodeController.text.trim().toUpperCase();
+    if (groupCode.isEmpty) {
+      _snack('Введите секретный код группы');
       return;
     }
+
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
 
@@ -107,6 +107,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     User? createdUser;
 
     try {
+      // 1. Проверяем существование группы по секретному коду в Firestore ДО создания Auth-аккаунта
+      final groupQuery = await FirebaseFirestore.instance
+          .collection('groups')
+          .where('code', isEqualTo: groupCode)
+          .limit(1)
+          .get();
+
+      if (groupQuery.docs.isEmpty) {
+        throw Exception('Группа с таким кодом не найдена. Проверьте правильность кода у старосты.');
+      }
+
+      final groupDoc = groupQuery.docs.first;
+      final groupData = groupDoc.data();
+      final groupName = (groupData['name'] ?? '').toString();
+      final deptId = (groupData['departmentId'] ?? '').toString();
+
+      if (groupName.isEmpty) {
+        throw Exception('Не удалось определить название группы по коду.');
+      }
+
+      // 2. Получаем название института/подразделения
+      String deptName = '';
+      if (deptId.isNotEmpty) {
+        final deptDoc = await FirebaseFirestore.instance.collection('departments').doc(deptId).get();
+        deptName = (deptDoc.data()?['name'] ?? '').toString();
+      }
+
+      final calculatedCourse = _calculateCourse(groupName);
+
+      // 3. Создаем пользователя в Firebase Auth
       final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: _passwordController.text,
@@ -117,23 +147,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await user.updateDisplayName(name);
 
-      // ✅ КРИТИЧНО: принудительно обновляем токен, чтобы Firestore видел авторизацию
+      // ✅ Принудительно обновляем токен, чтобы Firestore видел авторизацию
       await user.getIdToken(true);
-
-      // ✅ Небольшая пауза для синхронизации
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final deptDoc =
-      await FirebaseFirestore.instance.collection('departments').doc(_selectedDeptId).get();
-      final deptName = (deptDoc.data()?['name'] ?? '').toString();
-
+      // 4. Сохраняем профиль в Firestore с автоматической привязкой группы и института
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'name': name,
         'email': email,
-        'group': _selectedGroup,
-        'departmentId': _selectedDeptId,
+        'group': groupName,
+        'departmentId': deptId,
         'institute': deptName,
-        'course': '$_calculatedCourse курс',
+        'course': '$calculatedCourse курс',
         'phone': '',
         'role': 'student',
         'emailVerified': false,
@@ -143,15 +168,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await user.sendEmailVerification();
 
-      // Дальше AuthWrapper сам покажет экран подтверждения email.
+      // Возвращаемся на стартовый экран (AuthWrapper сам перенаправит на верификацию email)
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       await _rollback(createdUser);
       _snack(_registerError(e));
     } catch (e) {
-      // Если ошибка не связана с Auth (например, Firestore), показываем её
       await _rollback(createdUser);
-      if (mounted) _snack('Ошибка: $e');
+      if (mounted) _snack('Ошибка: ${e.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -170,7 +194,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return AuthScaffold(
       title: 'Регистрация',
       subtitle: 'Создайте аккаунт студента',
@@ -199,130 +222,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 1. Подразделение
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Text(
-                    'Не удалось загрузить подразделения. Проверьте подключение.',
-                    style: TextStyle(color: AppTheme.danger),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final depts = snapshot.data!.docs
-                    .map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>))
-                    .toList();
-                final isValid = depts.any((d) => d.id == _selectedDeptId);
-
-                return DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Подразделение',
-                    prefixIcon: Icon(Icons.account_balance_outlined),
-                  ),
-                  value: isValid ? _selectedDeptId : null,
-                  isExpanded: true,
-                  dropdownColor: theme.cardColor,
-                  items: depts
-                      .map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName)))
-                      .toList(),
-                  onChanged: _isLoading
-                      ? null
-                      : (val) => setState(() {
-                    _selectedDeptId = val;
-                    _selectedGroup = null;
-                  }),
-                  validator: (v) => v == null ? 'Выберите подразделение' : null,
-                );
+            // ✅ Поле ввода секретного кода группы вместо выпадающих списков
+            TextFormField(
+              controller: _groupCodeController,
+              enabled: !_isLoading,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Секретный код группы',
+                helperText: 'Введите код, полученный от старосты',
+                prefixIcon: Icon(Icons.vpn_key_outlined),
+              ),
+              validator: (v) {
+                final t = v?.trim() ?? '';
+                if (t.isEmpty) return 'Введите секретный код группы';
+                if (t.length < 4) return 'Код слишком короткий';
+                return null;
               },
             ),
             const SizedBox(height: 16),
-
-            // 2. Группа выбранного подразделения
-            if (_selectedDeptId != null)
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('groups')
-                    .where('departmentId', isEqualTo: _selectedDeptId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text(
-                      'Не удалось загрузить группы. Проверьте подключение.',
-                      style: TextStyle(color: AppTheme.danger),
-                    );
-                  }
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final groups = (snapshot.data?.docs
-                      .map((d) => (d.data() as Map<String, dynamic>)['name']?.toString() ?? '')
-                      .where((n) => n.isNotEmpty)
-                      .toList() ??
-                      [])
-                    ..sort();
-                  final isValidGroup = groups.contains(_selectedGroup);
-
-                  if (groups.isEmpty) {
-                    return Text(
-                      'Для этого подразделения пока нет групп. Обратитесь к администратору.',
-                      style: TextStyle(color: appMutedColor(context)),
-                    );
-                  }
-
-                  return DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Группа',
-                      prefixIcon: Icon(Icons.groups_outlined),
-                    ),
-                    value: isValidGroup ? _selectedGroup : null,
-                    isExpanded: true,
-                    dropdownColor: theme.cardColor,
-                    items: groups.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                    onChanged: _isLoading
-                        ? null
-                        : (val) => setState(() {
-                      _selectedGroup = val;
-                      if (val != null) _calculatedCourse = _calculateCourse(val);
-                    }),
-                    validator: (v) => v == null ? 'Выберите группу' : null,
-                  );
-                },
-              ),
-            if (_selectedDeptId != null) const SizedBox(height: 16),
-
-            if (_selectedGroup != null) ...[
-              AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  children: [
-                    const AppIconBox(Icons.layers_outlined, size: 36),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Курс', style: TextStyle(fontSize: 12, color: appMutedColor(context))),
-                          Text(
-                            '$_calculatedCourse курс · определён по номеру группы',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
 
             TextFormField(
               controller: _emailController,

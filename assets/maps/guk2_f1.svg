@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 602" width="1700" height="602" xmlns:c2pa="http://c2pa.org/manifest">
+<title>СВФУ, Главный учебный корпус, ул. Кулаковского 42, блок 2 — 1 этаж</title>
+<rect id="background" width="1700" height="602" fill="#E6EBF1"/>
+<g id="floor">
+<path d="M73.9 142.5 L1626.1 142.5 L1626.1 374.8 L73.9 374.8 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M126.7 73.9 L200.6 73.9 L200.6 142.5 L126.7 142.5 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M1520.5 89.8 L1626.1 89.8 L1626.1 147.8 L1520.5 147.8 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M707.5 374.8 L1013.7 374.8 L1013.7 517.4 L707.5 517.4 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M73.9 374.8 L242.9 374.8 L242.9 528.0 L73.9 528.0 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M1467.7 374.8 L1626.1 374.8 L1626.1 528.0 L1467.7 528.0 Z" fill="#F8FAFD" stroke="#1B2A4A" stroke-width="10" stroke-linejoin="round"/>
+<path d="M73.9 142.5 L1626.1 142.5 L1626.1 374.8 L73.9 374.8 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M126.7 73.9 L200.6 73.9 L200.6 142.5 L126.7 142.5 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M1520.5 89.8 L1626.1 89.8 L1626.1 147.8 L1520.5 147.8 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M707.5 374.8 L1013.7 374.8 L1013.7 517.4 L707.5 517.4 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M73.9 374.8 L242.9 374.8 L242.9 528.0 L73.9 528.0 Z" fill="#F8FAFD" stroke="none"/>
+<path d="M1467.7 374.8 L1626.1 374.8 L1626.1 528.0 L1467.7 528.0 Z" fill="#F8FAFD" stroke="none"/>
+</g>
+<g id="rooms">
+<path id="unit-1" d="M707.5 374.8 L1013.7 374.8 L1013.7 517.4 L707.5 517.4 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-2" d="M73.9 374.8 L242.9 374.8 L242.9 411.8 L73.9 411.8 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-133" d="M73.9 411.8 L174.2 411.8 L174.2 517.4 L73.9 517.4 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-131" d="M174.2 411.8 L242.9 411.8 L242.9 517.4 L174.2 517.4 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-3" d="M1467.7 374.8 L1626.1 374.8 L1626.1 528.0 L1467.7 528.0 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-128" d="M242.9 142.5 L454.0 142.5 L454.0 242.9 L242.9 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-126" d="M454.0 142.5 L517.4 142.5 L517.4 242.9 L454.0 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-124" d="M517.4 142.5 L623.0 142.5 L623.0 242.9 L517.4 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-122" d="M623.0 142.5 L718.0 142.5 L718.0 242.9 L623.0 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-4" d="M718.0 142.5 L828.9 142.5 L828.9 242.9 L718.0 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-5" d="M892.2 142.5 L992.5 142.5 L992.5 242.9 L892.2 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-118" d="M992.5 142.5 L1045.3 142.5 L1045.3 242.9 L992.5 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-БУФЕТ" d="M1045.3 142.5 L1172.0 142.5 L1172.0 242.9 L1045.3 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-6" d="M1172.0 142.5 L1256.5 142.5 L1256.5 242.9 L1172.0 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-7" d="M1256.5 142.5 L1341.0 142.5 L1341.0 242.9 L1256.5 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-8" d="M1341.0 142.5 L1425.5 142.5 L1425.5 242.9 L1341.0 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-9" d="M1425.5 142.5 L1509.9 142.5 L1509.9 242.9 L1425.5 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-129" d="M227.0 290.4 L369.6 290.4 L369.6 374.8 L227.0 374.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-127" d="M369.6 290.4 L454.0 290.4 L454.0 374.8 L369.6 374.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-125" d="M454.0 290.4 L517.4 290.4 L517.4 374.8 L454.0 374.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="unit-10" d="M517.4 290.4 L1150.9 290.4 L1150.9 374.8 L517.4 374.8 Z" fill="#EEF2F8" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-123" d="M1150.9 290.4 L1267.1 290.4 L1267.1 374.8 L1150.9 374.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="room-121" d="M1267.1 290.4 L1425.5 290.4 L1425.5 374.8 L1267.1 374.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="stairs">
+<path id="stairs-1" d="M126.7 73.9 L200.6 73.9 L200.6 142.5 L126.7 142.5 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="stairs-2" d="M1520.5 89.8 L1626.1 89.8 L1626.1 147.8 L1520.5 147.8 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+<path id="stairs-3" d="M828.9 142.5 L892.2 142.5 L892.2 242.9 L828.9 242.9 Z" fill="#E3ECF9" stroke="#2B3F66" stroke-width="2.5" stroke-linejoin="round"/>
+</g>
+<g id="doors">
+<line id="door-133" x1="115.1" y1="411.8" x2="133.1" y2="411.8" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-131" x1="199.5" y1="411.8" x2="217.5" y2="411.8" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-128" x1="357.4" y1="242.9" x2="339.4" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-126" x1="494.7" y1="242.9" x2="476.7" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-124" x1="579.2" y1="242.9" x2="561.2" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-122" x1="679.5" y1="242.9" x2="661.5" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-118" x1="1027.9" y1="242.9" x2="1009.9" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-БУФЕТ" x1="1117.7" y1="242.9" x2="1099.7" y2="242.9" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-129" x1="289.3" y1="290.4" x2="307.3" y2="290.4" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-127" x1="402.8" y1="290.4" x2="420.8" y2="290.4" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-125" x1="476.7" y1="290.4" x2="494.7" y2="290.4" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-123" x1="1200.0" y1="290.4" x2="1218.0" y2="290.4" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+<line id="door-121" x1="1337.3" y1="290.4" x2="1355.3" y2="290.4" stroke="#F8FAFD" stroke-width="6" stroke-linecap="round"/>
+</g>
+<g id="icons">
+<polyline id="icon-stairs-1" points="153.7,117.2 153.7,111.2 160.7,111.2 160.7,105.2 167.7,105.2 167.7,99.2 174.7,99.2" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="icon-stairs-2" points="1563.3,127.8 1563.3,121.8 1570.3,121.8 1570.3,115.8 1577.3,115.8 1577.3,109.8 1584.3,109.8" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="icon-stairs-3" points="850.6,201.7 850.6,195.7 857.6,195.7 857.6,189.7 864.6,189.7 864.6,183.7 871.6,183.7" fill="none" stroke="#2B3F66" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="nav">
+<circle id="node-stairs-1" cx="163.7" cy="108.2" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-stairs-2" cx="1573.3" cy="118.8" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-133" cx="124.1" cy="411.8" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-131" cx="208.5" cy="411.8" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-128" cx="348.4" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-126" cx="485.7" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-124" cx="570.2" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-122" cx="670.5" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-stairs-3" cx="860.6" cy="192.7" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-118" cx="1018.9" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-БУФЕТ" cx="1108.7" cy="242.9" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-129" cx="298.3" cy="290.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-127" cx="411.8" cy="290.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-125" cx="485.7" cy="290.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-123" cx="1209.0" cy="290.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+<circle id="node-door-121" cx="1346.3" cy="290.4" r="4" fill="#2F6BDB" fill-opacity="0"/>
+</g>
+<g id="labels">
+<text x="860.6" y="446.1" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">Вход</text>
+<text x="124.1" y="464.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">133</text>
+<text x="208.5" y="464.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">131</text>
+<text x="348.4" y="192.7" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">128</text>
+<text x="485.7" y="192.7" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">126</text>
+<text x="570.2" y="192.7" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">124</text>
+<text x="670.5" y="192.7" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">122</text>
+<text x="1018.9" y="192.7" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 1018.9 192.7)">118</text>
+<text x="1108.7" y="192.7" font-family="Arial, sans-serif" font-size="15" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">БУФЕТ</text>
+<text x="298.3" y="332.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">129</text>
+<text x="411.8" y="332.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">127</text>
+<text x="485.7" y="332.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">125</text>
+<text x="1209.0" y="332.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">123</text>
+<text x="1346.3" y="332.6" font-family="Arial, sans-serif" font-size="20" fill="#1B2A4A" font-weight="700" text-anchor="middle" dominant-baseline="middle">121</text>
+</g>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTowMzY5NWM1ZS01MTI4LTRhNWItOGQ3MS1hYTdjYzZhYjA0NWIAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaLo/ysaoBlihGjSabDjwabEAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo3OTg1MjdmZi1iZGE1LTRiMmQtYWYyNi00NGFhMjVmMzFlZGJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoCyRbBjFaIXC6MVToKSwspgAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggTt04uKJg5XsOqUdPfseH+JjaWbD7AxZARECXM+5eNWqkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaAirA72c7Uxs0Xf6xzo3Xh0AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIKosnNgPLtDKNG3lcsLB5AMw7r49ZEu2xCRoqZUmfm9WZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GS8BZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjAzNjk1YzVlLTUxMjgtNGE1Yi04ZDcxLWFhN2NjNmFiMDQ1Yi9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjcyNWU0OGM0LTA4ZDQtNDYyZi04Mzg4LTZhZTZiNTRhYzFlMXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCBO3Ti4omDlew6pR09+x4f4mNpZsPsDFkBEQJcz7l41aqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggn7y1T+75MU+halyMTdTuHDiD4CNb+ZUP6hDnlJgd+qKiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggzRfDbHyO27yPNADMyvvvSTw/5cU0RKu6KUq0YBXPHaR0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQBKCJQBr+LLEAL2IKvNomxqJmYzH04/95Ur+PG3oyqelvbobnWFfcVJa9GkIzxNyvJ5Jp5TCKK4KnnwfSs8XijI=</c2pa:manifest></metadata></svg>

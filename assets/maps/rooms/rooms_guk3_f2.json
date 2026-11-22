@@ -1,0 +1,30 @@
+{
+ "241a": {
+  "number": "241a",
+  "floor": 2,
+  "type": "classroom",
+  "title": "Аудитория 241a",
+  "description": ""
+ },
+ "247": {
+  "number": "247",
+  "floor": 2,
+  "type": "classroom",
+  "title": "Аудитория 247",
+  "description": ""
+ },
+ "245": {
+  "number": "245",
+  "floor": 2,
+  "type": "classroom",
+  "title": "Аудитория 245",
+  "description": ""
+ },
+ "243": {
+  "number": "243",
+  "floor": 2,
+  "type": "classroom",
+  "title": "Аудитория 243",
+  "description": ""
+ }
+}

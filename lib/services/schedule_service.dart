@@ -1,3 +1,4 @@
+// lib/services/schedule_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/lesson.dart';
@@ -24,9 +25,15 @@ class ScheduleService {
   static List<DateTime>? _cachedOddWeeks;
 
   static final List<DateTime> _defaultOddWeeks = [
-    DateTime(2026, 8, 31), DateTime(2026, 9, 14), DateTime(2026, 9, 28),
-    DateTime(2026, 10, 12), DateTime(2026, 10, 26), DateTime(2026, 11, 9),
-    DateTime(2026, 11, 23), DateTime(2026, 12, 7), DateTime(2026, 12, 21),
+    DateTime(2026, 8, 31),
+    DateTime(2026, 9, 14),
+    DateTime(2026, 9, 28),
+    DateTime(2026, 10, 12),
+    DateTime(2026, 10, 26),
+    DateTime(2026, 11, 9),
+    DateTime(2026, 11, 23),
+    DateTime(2026, 12, 7),
+    DateTime(2026, 12, 21),
   ];
 
   static Future<List<DateTime>> loadOddWeeks() async {
@@ -64,6 +71,7 @@ class ScheduleService {
   }
 
   static void resetCache() => _cachedOddWeeks = null;
+
   static DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   static DateTime mondayOf(DateTime d) {
@@ -72,6 +80,7 @@ class ScheduleService {
   }
 
   static int weekNumber(DateTime date, List<DateTime> oddWeeks) {
+    if (oddWeeks.isEmpty) return 1;
     final target = dateOnly(date);
     for (final start in oddWeeks) {
       final s = dateOnly(start);
@@ -101,18 +110,33 @@ class ScheduleService {
   static LessonOccurrence? occurrenceFor(Lesson lesson, DateTime date) {
     final t = _timeMatches(lesson.time);
     if (t.isEmpty) return null;
+
     final day = dateOnly(date);
-    final start = DateTime(day.year, day.month, day.day, 0, t.first);
-    final endMinutes = t.length > 1 ? t[1] : t.first + 95;
-    final end = DateTime(day.year, day.month, day.day, 0, endMinutes);
+    final startMinutes = t.first;
+    final endMinutes = t.length > 1 ? t[1] : startMinutes + 95;
+
+    final startH = startMinutes ~/ 60;
+    final startM = startMinutes % 60;
+    final endH = endMinutes ~/ 60;
+    final endM = endMinutes % 60;
+
+    final start = DateTime(day.year, day.month, day.day, startH, startM);
+    final end = DateTime(day.year, day.month, day.day, endH, endM);
+
     return LessonOccurrence(lesson, start, end);
   }
 
+  /// Главный фильтр.
+  ///
+  /// Правило по подгруппам:
+  ///  - урок без подгруппы (null / 0) — виден всем;
+  ///  - урок с подгруппой N — виден ТОЛЬКО студенту с подгруппой N;
+  ///  - студент без подгруппы (null) урок с подгруппой НЕ видит.
   static List<Lesson> lessonsForDate(
       List<Lesson> all,
       DateTime date,
       List<DateTime> oddWeeks, {
-        int? userSubgroup, // <-- Добавлено
+        int? userSubgroup,
       }) {
     final dayIndex = date.weekday - 1;
     final week = weekNumber(date, oddWeeks);
@@ -121,30 +145,31 @@ class ScheduleService {
       if (l.dayIndex != dayIndex) return false;
       if (l.week != 0 && l.week != week) return false;
 
-      if (userSubgroup != null && l.subgroup != null) {
-        if (l.subgroup != userSubgroup) return false;
-      }
-      return true;
+      // Пара без подгруппы — для всех
+      if (l.subgroup == null || l.subgroup == 0) return true;
+
+      // Пара с подгруппой — только для своей
+      return l.subgroup == userSubgroup;
     }).toList();
 
     result.sort((a, b) => startMinutes(a).compareTo(startMinutes(b)));
     return result;
   }
 
-  // ✅ ИСПРАВЛЕНО: добавлен userSubgroup
   static List<LessonOccurrence> occurrences(
       List<Lesson> all,
       DateTime from,
       List<DateTime> oddWeeks, {
         int days = 14,
-        int? userSubgroup, // <-- Добавлено
+        int? userSubgroup,
       }) {
+    if (oddWeeks.isEmpty) return [];
     final start = dateOnly(from);
     final result = <LessonOccurrence>[];
     for (int i = 0; i < days; i++) {
       final date = DateTime(start.year, start.month, start.day + i);
-      // Передаем подгруппу в lessonsForDate
-      for (final lesson in lessonsForDate(all, date, oddWeeks, userSubgroup: userSubgroup)) {
+      for (final lesson
+      in lessonsForDate(all, date, oddWeeks, userSubgroup: userSubgroup)) {
         final occ = occurrenceFor(lesson, date);
         if (occ != null) result.add(occ);
       }
@@ -167,25 +192,30 @@ class ScheduleService {
     return null;
   }
 
-  // ✅ ИСПРАВЛЕНО: добавлен userSubgroup
   static Future<void> rescheduleReminders(
       List<Lesson> all,
       List<DateTime> oddWeeks, {
-        int? userSubgroup, // <-- Добавлено
+        int? userSubgroup,
       }) async {
-    final now = DateTime.now();
-    final list = occurrences(all, now, oddWeeks, days: 14, userSubgroup: userSubgroup);
-    final reminders = <LessonReminder>[
-      for (final o in list)
-        if (o.start.isAfter(now))
-          LessonReminder(
-            key: '${o.lesson.id}_${o.start.toIso8601String()}',
-            subject: o.lesson.subject,
-            room: o.lesson.room,
-            time: o.lesson.time,
-            start: o.start,
-          ),
-    ];
-    await NotificationService.scheduleLessonReminderList(reminders);
+    if (oddWeeks.isEmpty) return;
+    try {
+      final now = DateTime.now();
+      final list = occurrences(all, now, oddWeeks,
+          days: 14, userSubgroup: userSubgroup);
+      final reminders = <LessonReminder>[
+        for (final o in list)
+          if (o.start.isAfter(now))
+            LessonReminder(
+              key: '${o.lesson.id}_${o.start.toIso8601String()}',
+              subject: o.lesson.subject,
+              room: o.lesson.room,
+              time: o.lesson.time,
+              start: o.start,
+            ),
+      ];
+      await NotificationService.scheduleLessonReminderList(reminders);
+    } catch (e) {
+      debugPrint('⚠️ [NOTIF] Не удалось перенести напоминания: $e');
+    }
   }
 }

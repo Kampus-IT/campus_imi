@@ -7,22 +7,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ✅ добавлен
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/verify_email_screen.dart';
 import 'screens/student_home_screen.dart';
 import 'screens/onboarding_screen.dart';
-import 'screens/event_detail_screen.dart'; // ✅ добавлен
-import 'screens/news_detail_screen.dart'; // ✅ добавлен
-import 'models/event_model.dart'; // ✅ добавлен
-import 'models/news_model.dart'; // ✅ добавлен
+import 'screens/event_detail_screen.dart';
+import 'screens/news_detail_screen.dart';
+import 'models/event_model.dart';
+import 'models/news_model.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/settings_service.dart';
 
-// ✅ Ключ для навигации из пуш-уведомлений
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -31,6 +30,12 @@ void main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // ✅ ВКЛЮЧАЕМ КЭШИРОВАНИЕ (экономит десятки тысяч чтений)
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
   } catch (e) {
     debugPrint('Firebase init error: $e');
@@ -70,7 +75,6 @@ Future<void> _initOptionalServices() async {
       OneSignal.User.pushSubscription.optOut();
     }
 
-    // ✅ Обработка клика по пушу
     OneSignal.Notifications.addClickListener((event) async {
       final data = event.notification.additionalData;
       if (data == null) return;
@@ -90,7 +94,7 @@ Future<void> _initOptionalServices() async {
         } else if (type == 'news') {
           final doc = await FirebaseFirestore.instance.collection('news').doc(targetId).get();
           if (!doc.exists) return;
-          final nw = News.fromMap(doc.id, doc.data()!);
+          final nw = News.fromMap(doc.data()!, doc.id);
           nav.push(MaterialPageRoute(builder: (_) => NewsDetailScreen(news: nw)));
         }
       } catch (e) { debugPrint('Push navigation error: $e'); }
@@ -135,8 +139,8 @@ class CampusApp extends StatelessWidget {
       listenable: SettingsService.instance,
       builder: (context, _) {
         return MaterialApp(
-          title: 'СВФУ Кампус',
-          navigatorKey: navigatorKey, // ✅ важно
+          title: 'Kampus-IT NEFU',
+          navigatorKey: navigatorKey,
           theme: AppTheme.theme,
           darkTheme: AppTheme.darkTheme,
           themeMode: SettingsService.instance.themeMode,

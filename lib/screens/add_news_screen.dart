@@ -9,7 +9,7 @@ import '../theme/app_theme.dart';
 import '../models/news_model.dart';
 import '../models/department_model.dart';
 import '../services/news_service.dart';
-import '../services/push_service.dart'; // ✅ добавлен
+import '../services/push_service.dart';
 
 class AddNewsScreen extends StatefulWidget {
   final News? news;
@@ -33,10 +33,23 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
 
   bool _isLoading = false;
   List<String> _imageUrls = [];
-  String _category = 'События';
+
+  String _scope = 'university';
+  String _category = 'Новости';
   String? _selectedDeptId;
 
-  static const List<String> _categories = ['Trending', 'Спорт', 'Учёба', 'События', 'Культура'];
+  // Красивое описание разделов с иконками
+  final List<Map<String, dynamic>> _scopes = [
+    {'value': 'university', 'label': 'СВФУ', 'icon': Icons.account_balance, 'color': Colors.blue},
+    {'value': 'institute', 'label': 'Мой институт', 'icon': Icons.school, 'color': Colors.orange},
+    {'value': 'profkom', 'label': 'Профсоюз', 'icon': Icons.groups, 'color': Colors.purple},
+  ];
+
+  static const Map<String, List<String>> _categoriesMap = {
+    'university': ['Новости', 'Спорт', 'Культура', 'Конференции', 'Мероприятия'],
+    'institute': ['Новости', 'Объявления', 'События', 'Мероприятия'],
+    'profkom': ['Новости', 'Мероприятия', 'Награждения'],
+  };
 
   @override
   void initState() {
@@ -46,11 +59,21 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
       _titleController.text = news.title;
       _shortDescController.text = news.shortDescription;
       _bodyController.text = news.body;
-      _category = news.category;
+      _scope = news.scope;
       _sourceNameController.text = news.sourceName;
       _sourceUrlController.text = news.sourceUrl;
       _imageUrls = List.from(news.imageUrls);
       _selectedDeptId = news.departmentId.isNotEmpty ? news.departmentId : null;
+
+      // Умная установка категории (если старая категория не входит в список нового раздела, ставим первую)
+      final availableCats = _categoriesMap[_scope] ?? ['Новости'];
+      if (availableCats.contains(news.category)) {
+        _category = news.category;
+      } else {
+        _category = availableCats.first;
+      }
+    } else {
+      _category = _categoriesMap[_scope]!.first;
     }
   }
 
@@ -125,11 +148,13 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
         body: _bodyController.text.trim(),
         shortDescription: _shortDescController.text.trim(),
         date: widget.news?.date ?? dateStr,
+        scope: _scope,
         category: _category,
         authorName: userName,
         authorId: widget.news?.authorId ?? user.uid,
-        departmentId: _selectedDeptId ?? '',
+        departmentId: _scope == 'institute' ? (_selectedDeptId ?? '') : '',
         imageUrls: _imageUrls,
+        mainImage: _imageUrls.isNotEmpty ? _imageUrls.first : '',
         imageBase64: '',
         createdAt: widget.news?.createdAt ?? DateTime.now(),
         sourceName: _sourceNameController.text.trim(),
@@ -139,11 +164,8 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
       if (widget.isEditing) {
         await _newsService.updateNews(news);
       } else {
-        // ✅ Возвращает ID новости
         final newsId = await _newsService.addNews(news);
-
-        // ✅ Вызываем правильный пуш
-        if (news.departmentId.isEmpty) {
+        if (_scope == 'university' || _scope == 'profkom') {
           await PushService.sendNewsPush(
             newsId: newsId,
             title: news.title,
@@ -183,6 +205,10 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentCategories = _categoriesMap[_scope] ?? ['Новости'];
+    final currentScope = _scopes.firstWhere((s) => s['value'] == _scope);
+    final Color scopeColor = currentScope['color'] as Color;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Редактировать новость' : 'Добавить новость'),
@@ -199,41 +225,88 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+
+              //  Красивый выбор раздела (в виде карточек)
+              const Text('Где публикуем?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _scopes.map((s) {
+                  final isSelected = _scope == s['value'];
+                  final color = s['color'] as Color;
+                  return ChoiceChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(s['icon'] as IconData, size: 16, color: isSelected ? Colors.white : color),
+                        const SizedBox(width: 6),
+                        Text(s['label'] as String),
+                      ],
+                    ),
+                    selected: isSelected,
+                    selectedColor: color,
+                    labelStyle: TextStyle(color: isSelected ? Colors.white : color, fontWeight: FontWeight.bold),
+                    onSelected: _isLoading ? null : (selected) {
+                      if (selected) {
+                        setState(() {
+                          _scope = s['value'] as String;
+                          _category = _categoriesMap[_scope]!.first;
+                          if (_scope != 'institute') _selectedDeptId = null;
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+
+              //  Выбор категории
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: 'Категория *',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.local_offer, color: scopeColor),
+                ),
+                value: _category,
+                items: currentCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                onChanged: _isLoading ? null : (v) => setState(() => _category = v!),
+              ),
+              const SizedBox(height: 16),
+
+              //  Выбор института
+              if (_scope == 'institute')
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const LinearProgressIndicator();
+                    final depts = snapshot.data!.docs.map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Какое подразделение? *',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.school, color: scopeColor),
+                        ),
+                        value: _selectedDeptId,
+                        items: depts.map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName))).toList(),
+                        onChanged: _isLoading ? null : (v) => setState(() => _selectedDeptId = v),
+                        validator: (v) => v == null ? 'Выберите подразделение' : null,
+                      ),
+                    );
+                  },
+                ),
+
+              // Заголовок и текст
               TextFormField(
                 controller: _titleController,
                 enabled: !_isLoading,
-                decoration: const InputDecoration(labelText: 'Заголовок *', border: OutlineInputBorder()),
-                validator: (v) => (v == null || v.isEmpty) ? 'Введите заголовок' : null,
-              ),
-              const SizedBox(height: 16),
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('departments').orderBy('shortName').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const LinearProgressIndicator();
-                  final depts = snapshot.data!.docs.map((d) => Department.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
-                  return DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Подразделение (если пусто - для всех)', border: OutlineInputBorder()),
-                    value: _selectedDeptId,
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Все (общая новость)')),
-                      ...depts.map((d) => DropdownMenuItem(value: d.id, child: Text(d.shortName))),
-                    ],
-                    onChanged: _isLoading ? null : (v) => setState(() => _selectedDeptId = v),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(border: Border.all(color: AppTheme.divider), borderRadius: BorderRadius.circular(4)),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _category,
-                    items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: _isLoading ? null : (v) => setState(() => _category = v!),
-                  ),
+                decoration: InputDecoration(
+                  labelText: 'Заголовок *',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.title),
                 ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Введите заголовок' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -251,22 +324,38 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                 decoration: const InputDecoration(labelText: 'Полный текст *', border: OutlineInputBorder()),
                 validator: (v) => (v == null || v.isEmpty) ? 'Введите текст' : null,
               ),
-              const SizedBox(height: 20),
-              const Text('Фотографии', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
+
+              const SizedBox(height: 24),
+
+              // Блок фото
+              Row(
+                children: [
+                  const Icon(Icons.photo_library, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Фотографии', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  if (_imageUrls.isNotEmpty)
+                    Text('${_imageUrls.length}/10', style: const TextStyle(color: Colors.grey)),
+                ],
+              ),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: _isLoading ? null : _pickAndUploadImages,
                 child: Container(
                   height: 100,
-                  decoration: BoxDecoration(color: AppTheme.cardWhite, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.divider)),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _imageUrls.isEmpty ? Colors.grey.shade400 : Colors.transparent, style: _imageUrls.isEmpty ? BorderStyle.solid : BorderStyle.none),
+                  ),
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : const Column(
+                      : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_photo_alternate_outlined, size: 30, color: AppTheme.textMuted),
-                      SizedBox(height: 4),
-                      Text('Нажмите, чтобы добавить фото', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                      Icon(Icons.add_a_photo_outlined, size: 30, color: scopeColor),
+                      const SizedBox(height: 4),
+                      const Text('Добавить фото', style: TextStyle(fontSize: 13, color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -293,25 +382,52 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                               child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: const Icon(Icons.close, size: 14, color: Colors.white)),
                             ),
                           ),
+                          if (index == 0)
+                            Positioned(
+                              bottom: 4, left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(4)),
+                                child: const Text('Главная', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
                         ],
                       );
                     },
                   ),
                 ),
-              const SizedBox(height: 20),
-              const Text('Источник (необязательно)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
-              const SizedBox(height: 10),
-              TextFormField(controller: _sourceNameController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Название источника', hintText: 'Например: КМС ППОС СВФУ «Точка Кипения»', border: OutlineInputBorder(), prefixIcon: Icon(Icons.info_outline))),
-              const SizedBox(height: 12),
-              TextFormField(controller: _sourceUrlController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Ссылка на источник (URL)', hintText: 'https://vk.com/wall...', border: OutlineInputBorder(), prefixIcon: Icon(Icons.link)), keyboardType: TextInputType.url),
+
               const SizedBox(height: 24),
+
+              // Источник
+              ExpansionTile(
+                title: const Text('Источник (необязательно)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                tilePadding: EdgeInsets.zero,
+                shape: const Border(),
+                collapsedShape: const Border(),
+                children: [
+                  const SizedBox(height: 10),
+                  TextFormField(controller: _sourceNameController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Название источника', hintText: 'Например: Сайт СВФУ', border: OutlineInputBorder(), prefixIcon: Icon(Icons.info_outline))),
+                  const SizedBox(height: 12),
+                  TextFormField(controller: _sourceUrlController, enabled: !_isLoading, decoration: const InputDecoration(labelText: 'Ссылка на источник (URL)', hintText: 'https://...', border: OutlineInputBorder(), prefixIcon: Icon(Icons.link)), keyboardType: TextInputType.url),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Кнопка сохранения
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _saveNews,
-                  icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(widget.isEditing ? Icons.save : Icons.publish),
-                  label: Text(_isLoading ? 'Сохранение...' : (widget.isEditing ? 'Сохранить' : 'Опубликовать')),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryNavy, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                  icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(widget.isEditing ? Icons.save : Icons.send),
+                  label: Text(_isLoading ? 'Сохранение...' : (widget.isEditing ? 'Сохранить изменения' : 'Опубликовать')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: scopeColor, // Кнопка красится в цвет выбранного раздела
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
             ],

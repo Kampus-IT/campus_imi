@@ -11,7 +11,7 @@ import '../models/event_model.dart';
 import '../models/user_model.dart';
 import '../models/department_model.dart';
 import '../services/event_service.dart';
-import '../services/push_service.dart'; // ✅ добавлен
+import '../services/push_service.dart';
 import '../utils/validators.dart';
 
 class AddEventScreen extends StatefulWidget {
@@ -165,10 +165,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
         createdAt: DateTime.now(),
       );
 
-      // ✅ Возвращает ID
+      // Возвращает ID
       final eventId = await _eventService.addEvent(event);
 
-      // ✅ Пуш для общих мероприятий
+      // Пуш для общих мероприятий
       if (event.departmentId.isEmpty) {
         await PushService.sendEventPush(
           eventId: eventId,

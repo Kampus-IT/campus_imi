@@ -1,0 +1,37 @@
+{
+ "410": {
+  "number": "410",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 410",
+  "description": ""
+ },
+ "427": {
+  "number": "427",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 427",
+  "description": ""
+ },
+ "425": {
+  "number": "425",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 425",
+  "description": ""
+ },
+ "421": {
+  "number": "421",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 421",
+  "description": ""
+ },
+ "419": {
+  "number": "419",
+  "floor": 4,
+  "type": "classroom",
+  "title": "Аудитория 419",
+  "description": ""
+ }
+}

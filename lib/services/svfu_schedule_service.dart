@@ -1,14 +1,16 @@
+// lib/services/svfu_schedule_service.dart
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../models/lesson.dart';
+import '../utils/building_resolver.dart'; // ✅ ИМПОРТ РЕЗОЛВЕРА
 
 class SvfuGroup {
-  final String name;        // Полное имя из API, например "С-ЛД-24-1/2F1"
-  final int id;             // ID группы в API
-  final String cleanName;   // Без префикса факультета, со слешем: "ЛД-24-1/2F1"
-  final String safeId;      // Безопасный ID для Firestore: "ЛД-24-1_2F1"
+  final String name;        // Полное имя из API: "С-ЛД-24-1/2F1"
+  final int id;
+  final String cleanName;   // "ЛД-24-1/2F1"
+  final String safeId;      // "ЛД-24-1_2F1"
   final int course;
 
   SvfuGroup({
@@ -24,7 +26,7 @@ class SvfuScheduleService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _baseUrl = 'https://eios.s-vfu.ru/api';
 
-  // ⚠️ Обновите токен, если получите 401/403
+  // ⚠️ Токен живёт ~7 дней. Проверяйте exp в JWT при ошибках 401.
   static const String _authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoia2VzaGFfMDA3QGljbG91ZC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9zdXJuYW1lIjoi0JrQuNGA0LXQvdGB0LrQuNC5INCYLiDQmC4iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9oYXNoIjoiIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvc2lkIjoiLTEyMjM4OCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvdXNlcmRhdGEiOiIyIiwidmVyaWZTdHJpbmciOiIiLCJuYmYiOjE3OTM1NDQyMDEsImV4cCI6MTc5NDE5OTQwMSwiaXNzIjoiV2ViQXBwIiwiYXVkIjoiTU1JU0xhYiJ9.yTT_45nYgBw_-ncf8BTm9Y44J05HjOES5aoMleXvcn0';
 
   Map<String, String> get _headers => {
@@ -37,27 +39,38 @@ class SvfuScheduleService {
     'client-version': '2026-10-24T10:59:44.100Z',
   };
 
-  // --- Утилиты для работы со слешами ---
+  // --- Утилиты ---
 
-  /// Убирает префикс факультета: "С-ЛД-24-1/2F1" -> "ЛД-24-1/2F1"
   String _cleanGroupName(String rawGroup) {
     return rawGroup.replaceFirst(RegExp(r'^[А-ЯЁA-Z]{2,5}-'), '').trim();
   }
 
-  /// Делает безопасный ID для Firestore: "ЛД-24-1/2F1" -> "ЛД-24-1_2F1"
   String _safeIdFromName(String cleanName) {
     return cleanName.replaceAll('/', '_').replaceAll('\\', '_').trim();
   }
 
-  // --- API-методы ---
+  /// Стабильный хеш (в отличие от `String.hashCode`, который в Dart
+  /// может меняться между запусками VM).
+  int _stableHash(String s) {
+    var h = 0;
+    for (final b in s.codeUnits) {
+      h = (h * 31 + b) & 0x7FFFFFFF;
+    }
+    return h;
+  }
+
+  // --- API ---
 
   Future<List<SvfuGroup>> getAllGroups() async {
     try {
       final url = Uri.parse('$_baseUrl/raspGrouplist?year=2026-2027');
       final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 30));
 
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        debugPrint('❌ [SVFU] Токен истёк при загрузке групп (${response.statusCode})');
+        throw Exception('Токен авторизации СВФУ устарел. Обновите _authToken.');
+      }
       if (response.statusCode != 200) {
-        debugPrint('❌ [SVFU] Ошибка загрузки групп: Статус ${response.statusCode}');
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
 
@@ -77,7 +90,7 @@ class SvfuScheduleService {
       }).toList();
     } catch (e) {
       debugPrint('❌ [SVFU] Ошибка загрузки групп: $e');
-      throw Exception('Не удалось загрузить список групп: $e');
+      rethrow;
     }
   }
 
@@ -87,11 +100,10 @@ class SvfuScheduleService {
       final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 30));
 
       debugPrint('🔍 [SVFU] GetRaspDates Status: ${response.statusCode}');
-      debugPrint('🔍 [SVFU] GetRaspDates Body: ${response.body}');
 
       if (response.statusCode == 401 || response.statusCode == 403) {
-        debugPrint('❌ [SVFU] Токен истек (401/403)! Обновите _authToken.');
-        throw Exception('Токен авторизации устарел');
+        debugPrint('❌ [SVFU] Токен истёк (401/403). Обновите _authToken.');
+        throw Exception('Токен авторизации СВФУ устарел');
       }
       if (response.statusCode != 200) {
         throw Exception('Ошибка сервера: ${response.statusCode}');
@@ -120,7 +132,7 @@ class SvfuScheduleService {
       return datesList.map((d) => d.toString()).toList();
     } catch (e) {
       debugPrint('❌ [SVFU] Ошибка getSemesterDates($groupId): $e');
-      throw Exception('Не удалось загрузить учебные даты: $e');
+      rethrow;
     }
   }
 
@@ -132,21 +144,21 @@ class SvfuScheduleService {
   }) async {
     try {
       final cleanName = _cleanGroupName(groupName);
-      final safeId = _safeIdFromName(cleanName); // ← для doc.id и префикса ID пар
+      final safeId = _safeIdFromName(cleanName);
 
       final dates = await getSemesterDates(groupId);
       if (dates.isEmpty) {
-        debugPrint('⚠️ [SVFU] Нет дат для группы $cleanName — пропускаем.');
+        debugPrint('⚠️ [SVFU] Нет дат для $cleanName — пропускаем.');
         return 0;
       }
 
-      debugPrint('▶️ [SVFU] Импорт группы $cleanName (safeId=$safeId, дат: ${dates.length})');
+      debugPrint('▶️ [SVFU] Импорт $cleanName (safeId=$safeId, дат: ${dates.length})');
 
       final List<Lesson> parsedLessons = [];
       final seenIds = <String>{};
 
-      // Стабильный числовой префикс для ID пар (без слешей)
-      final groupHash = safeId.hashCode;
+      // ✅ Стабильный числовой префикс для ID пар
+      final groupHash = _stableHash(safeId);
 
       for (int i = 0; i < dates.length; i++) {
         final dateStr = dates[i];
@@ -166,6 +178,7 @@ class SvfuScheduleService {
               String subject = rawDiscipline;
               int? subgroup;
 
+              // Парсинг подгрупп (упрощенный, как в старом коде)
               final subMatch = RegExp(
                 r'(?:([12])\s*(?:пг|п/г|пр|пн))|(?:(?:пг|п/г|пр|пн)\s*([12]))',
                 caseSensitive: false,
@@ -196,26 +209,39 @@ class SvfuScheduleService {
               if (weekType == 1) week = 1;
               if (weekType == 2) week = 2;
 
-              // ✅ ID пары — без слешей (используем safeId-hash вместо cleanName)
+              // ==========================================
+              // ✅ БЛОК РАСПОЗНАВАНИЯ КОРПУСА И КАБИНЕТА
+              // ==========================================
+              String roomRaw = (item['аудитория'] ?? '').toString().trim();
+
+              // Извлекаем корпус и чистим номер
+              String building = BuildingResolver.parseBuildingFromRoom(roomRaw);
+              String roomNum = BuildingResolver.cleanRoomNumber(roomRaw);
+
+              // Если префикс не найден, но там написано "Стадион Юность"
+              if (building.isEmpty && roomRaw.toUpperCase().contains('ЮНОСТЬ')) {
+                building = 'yunost';
+                roomNum = 'Стадион';
+              }
+
               final String docId =
                   '${groupHash}_${dayIndex}_${item['начало']}_${subject.hashCode}_${week}_${subgroup ?? 0}';
               if (seenIds.contains(docId)) continue;
               seenIds.add(docId);
 
-              final lesson = Lesson(
+              parsedLessons.add(Lesson(
                 id: docId,
                 time: '${item['начало']}-${item['конец']}',
                 subject: subject,
-                room: item['аудитория'] ?? '',
+                room: roomNum,       // ✅ Чистый номер
+                building: building,  // ✅ Вытащенный корпус
                 teacher: item['преподаватель'] ?? '',
                 type: type,
                 dayIndex: dayIndex,
-                group: cleanName, // ← со слешем, это значение поля — допустимо
+                group: cleanName,
                 week: week,
                 subgroup: subgroup,
-              );
-
-              parsedLessons.add(lesson);
+              ));
             } catch (e) {
               debugPrint('❌ [SVFU] Ошибка парсинга пары: $e');
             }
@@ -232,7 +258,6 @@ class SvfuScheduleService {
         return 0;
       }
 
-      // Удаляем старые пары — фильтр по ПОЛЮ 'group' (значение, слеш ок)
       debugPrint('🗑️ [SVFU] Удаляем старые пары $cleanName...');
       final oldLessons = await _db
           .collection('lessons')
@@ -246,15 +271,13 @@ class SvfuScheduleService {
         await batch.commit();
       }
 
-      // ✅ Сохраняем документ группы по безопасному ID
       final groupRef = _db.collection('groups').doc(safeId);
       await groupRef.set({
-        'name': cleanName,       // отображаемое имя (со слешем)
-        'safeId': safeId,        // безопасный ID
+        'name': cleanName,
+        'safeId': safeId,
         'departmentId': departmentId,
       }, SetOptions(merge: true));
 
-      // Сохраняем пары (ID уже безопасные)
       debugPrint('💾 [SVFU] Сохраняем ${parsedLessons.length} пар для $cleanName...');
       for (var i = 0; i < parsedLessons.length; i += 400) {
         final batch = _db.batch();
@@ -264,7 +287,7 @@ class SvfuScheduleService {
         await batch.commit();
       }
 
-      debugPrint('✅ [SVFU] Группа $cleanName импортирована (${parsedLessons.length} пар).');
+      debugPrint('✅ [SVFU] $cleanName импортирован (${parsedLessons.length} пар).');
       return parsedLessons.length;
     } catch (e) {
       throw Exception('Не удалось импортировать расписание: $e');
@@ -285,7 +308,7 @@ class SvfuScheduleService {
         throw Exception('Не найдено групп для факультета $facultyCode');
       }
 
-      debugPrint('▶️ [SVFU] Импорт факультета $facultyCode (групп: ${facultyGroups.length})');
+      debugPrint('▶️ [SVFU] Импорт $facultyCode (групп: ${facultyGroups.length})');
 
       int totalLessons = 0;
       for (int i = 0; i < facultyGroups.length; i++) {
@@ -303,10 +326,10 @@ class SvfuScheduleService {
           debugPrint('⚠️ [SVFU] Пропущена группа ${group.cleanName}: $e');
         }
 
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 150));
       }
 
-      debugPrint('✅ [SVFU] Импорт $facultyCode завершён. Всего пар: $totalLessons');
+      debugPrint('✅ [SVFU] Импорт $facultyCode завершён. Пар: $totalLessons');
       return totalLessons;
     } catch (e) {
       throw Exception('Не удалось импортировать факультет: $e');

@@ -138,6 +138,57 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
+  /// Показывает список заблокированных (один запрос, без лишних чтений).
+  Future<void> _showBlockedList() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Заблокированные'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StreamBuilder<List<Map<String, String>>>(
+            stream: _repo.blockedAuthorsWithNames(),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final list = snap.data!;
+              if (list.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Вы пока никого не блокировали'),
+                );
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: list.length,
+                itemBuilder: (context, i) {
+                  final user = list[i];
+                  return ListTile(
+                    title: Text(user['name']!),
+                    trailing: TextButton(
+                      onPressed: () async {
+                        await _repo.unblockAuthor(user['id']!);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      child: const Text('Разблокировать'),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Правила сообщества: без согласия с ними писать в чат нельзя (требование App Store).
   Future<void> _showRulesDialog() async {
     final accepted = await showDialog<bool>(
@@ -169,8 +220,6 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  /// ✅ ИСПРАВЛЕНО: FilledButton больше не получает бесконечную ширину.
-  /// Обёрнут в SizedBox с фиксированной шириной и явным minimumSize.
   Widget _buildRulesGate() {
     return SafeArea(
       top: false,
@@ -214,7 +263,6 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
       await _repo.sendMessage(widget.groupId, t);
       _ctrl.clear();
     } catch (_) {
-      // Текст остаётся в поле, чтобы его не потерять.
       _snack('Не удалось отправить сообщение. Проверьте подключение.');
     }
   }
@@ -329,7 +377,7 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
         title: const Text('Заблокировать автора?'),
         content: Text(
           'Вы больше не будете видеть сообщения ${m.authorName} в чате. '
-              'Это можно изменить позже.',
+              'Это можно изменить позже в списке заблокированных.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
@@ -337,7 +385,7 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await _repo.blockAuthor(m.authorId);
+                await _repo.blockAuthor(m.authorId, authorName: m.authorName);
                 _snack('Пользователь заблокирован');
               } catch (_) {
                 _snack('Не удалось заблокировать. Попробуйте позже.');
@@ -379,122 +427,135 @@ class _ChatTabState extends State<ChatTab> with AutomaticKeepAliveClientMixin {
     super.build(context);
     final canEdit = widget.roles.any((r) => r.canEdit);
 
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: appAccentSoftColor(context),
-          child: Text(
-            'Сообщения видят участники группы. Оскорбления и спам запрещены. '
-                'Чтобы пожаловаться или заблокировать автора, нажмите на сообщение и удерживайте.',
-            style: TextStyle(fontSize: 12, color: appAccentColor(context)),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Флудилка'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.block),
+            tooltip: 'Заблокированные',
+            onPressed: _showBlockedList,
           ),
-        ),
-        Expanded(
-          child: StreamBuilder<List<ChatMessage>>(
-            stream: _repo.chat(widget.groupId),
-            builder: (context, s) {
-              if (s.hasError) return const AppErrorState();
-              if (!s.hasData) return const Center(child: CircularProgressIndicator());
-              final msgs = s.data!.where((m) => !_blocked.contains(m.authorId)).toList();
-              if (msgs.isEmpty) {
-                return Center(
-                  child: Text('Напишите первое сообщение',
-                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
-                );
-              }
-              return ListView.builder(
-                reverse: true,
-                padding: const EdgeInsets.all(12),
-                itemCount: msgs.length,
-                itemBuilder: (_, i) {
-                  final m = msgs[i];
-                  final mine = m.authorId == _repo.uid;
-                  final canDelete = mine || canEdit;
-                  final cs = Theme.of(context).colorScheme;
-
-                  // В темной теме цвета для своих/чужих сообщений
-                  final bgColor = mine
-                      ? (Theme.of(context).brightness == Brightness.dark
-                      ? cs.primary.withValues(alpha: 0.4)
-                      : cs.primaryContainer)
-                      : (Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).cardColor
-                      : cs.surfaceContainerHighest);
-
-                  final textColor = mine
-                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : cs.onPrimaryContainer)
-                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white : cs.onSurface);
-
-                  return Align(
-                    alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: GestureDetector(
-                      onLongPress: (!mine || canDelete)
-                          ? () => _showMessageActions(m, mine: mine, canDelete: canDelete)
-                          : null,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 3),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              m.authorName,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: mine ? textColor.withValues(alpha: 0.7) : cs.primary
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(m.text, style: TextStyle(color: textColor)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        if (!_rulesAccepted)
-          _buildRulesGate()
-        else
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _ctrl,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 1000,
-                      buildCounter: (_, {required currentLength, required isFocused, required maxLength}) => null,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: 'Сообщение',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        fillColor: Theme.of(context).cardColor,
-                      ),
-                    ),
-                  ),
-                  IconButton(onPressed: _send, icon: const Icon(Icons.send)),
-                ],
-              ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: appAccentSoftColor(context),
+            child: Text(
+              'Сообщения видят участники группы. Оскорбления и спам запрещены. '
+                  'Чтобы пожаловаться или заблокировать автора, нажмите на сообщение и удерживайте.',
+              style: TextStyle(fontSize: 12, color: appAccentColor(context)),
             ),
           ),
-      ],
+          Expanded(
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: _repo.chat(widget.groupId),
+              builder: (context, s) {
+                if (s.hasError) return const AppErrorState();
+                if (!s.hasData) return const Center(child: CircularProgressIndicator());
+                final msgs = s.data!.where((m) => !_blocked.contains(m.authorId)).toList();
+                if (msgs.isEmpty) {
+                  return Center(
+                    child: Text('Напишите первое сообщение',
+                        style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+                  );
+                }
+                return ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: msgs.length,
+                  itemBuilder: (_, i) {
+                    final m = msgs[i];
+                    final mine = m.authorId == _repo.uid;
+                    final canDelete = mine || canEdit;
+                    final cs = Theme.of(context).colorScheme;
+
+                    final bgColor = mine
+                        ? (Theme.of(context).brightness == Brightness.dark
+                        ? cs.primary.withValues(alpha: 0.4)
+                        : cs.primaryContainer)
+                        : (Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).cardColor
+                        : cs.surfaceContainerHighest);
+
+                    final textColor = mine
+                        ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : cs.onPrimaryContainer)
+                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white : cs.onSurface);
+
+                    return Align(
+                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: GestureDetector(
+                        onLongPress: (!mine || canDelete)
+                            ? () => _showMessageActions(m, mine: mine, canDelete: canDelete)
+                            : null,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                m.authorName,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: mine ? textColor.withValues(alpha: 0.7) : cs.primary
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(m.text, style: TextStyle(color: textColor)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          if (!_rulesAccepted)
+            _buildRulesGate()
+          else
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _ctrl,
+                        minLines: 1,
+                        maxLines: 4,
+                        maxLength: 1000,
+                        buildCounter: (_, {required currentLength, required isFocused, required maxLength}) => null,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          hintText: 'Сообщение',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          fillColor: Theme.of(context).cardColor,
+                        ),
+                      ),
+                    ),
+                    IconButton(onPressed: _send, icon: const Icon(Icons.send)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -590,7 +651,6 @@ class MaterialCard extends StatelessWidget {
     }
 
     Future<void> openFile(String url) async {
-      // Открываем только https-ссылки: в базе не должно быть «tel:», «intent:» и т.п.
       final uri = Uri.tryParse(url);
       if (uri == null || uri.scheme != 'https') return;
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -796,7 +856,7 @@ class _MaterialFormState extends State<MaterialForm> {
             FilledButton(
               onPressed: _saving ? null : _save,
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48), // ✅ корректная ширина — по ширине колонки
+                minimumSize: const Size.fromHeight(48),
               ),
               child: _saving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))

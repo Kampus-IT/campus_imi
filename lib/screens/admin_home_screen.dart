@@ -10,8 +10,11 @@ import 'admin_groups_screen.dart';
 import 'admin_export_screen.dart';
 import 'admin_departments_screen.dart';
 import 'admin_calendar_import_screen.dart';
-import 'admin_import_calendar_screen.dart'; // ✅ Импорт нового экрана
+import 'admin_import_calendar_screen.dart';
 import 'admin_reports_screen.dart';
+import '../utils/lesson_building_migration.dart';
+import '../utils/group_code_helper.dart'; // ✅ Импорт генератора кодов групп
+import 'admin_group_codes_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -19,15 +22,18 @@ class AdminHomeScreen extends StatelessWidget {
   static const List<_AdminCardItem> _cards = [
     _AdminCardItem(icon: Icons.calendar_month, label: 'Расписание', subtitle: 'Управление занятиями', color: Color(0xFF3D6FA3)),
     _AdminCardItem(icon: Icons.group_add, label: 'Группы', subtitle: 'Список всех групп', color: Color(0xFF7E3FBF)),
+    _AdminCardItem(icon: Icons.vpn_key_outlined, label: 'Коды групп', subtitle: 'Генерация секретных кодов', color: Colors.amber), // ✅ НОВАЯ КНОПКА КОДОВ
     _AdminCardItem(icon: Icons.event_available, label: 'Мероприятия', subtitle: 'Создание и отметки', color: Color(0xFF2E7D52)),
     _AdminCardItem(icon: Icons.people, label: 'Студенты', subtitle: 'Роли и баллы', color: Color(0xFF8A5A00)),
     _AdminCardItem(icon: Icons.campaign, label: 'Новости', subtitle: 'Публикация', color: Color(0xFFB8922A)),
     _AdminCardItem(icon: Icons.file_download_outlined, label: 'Экспорт в Excel', subtitle: 'Выгрузка данных студентов', color: Colors.teal),
     _AdminCardItem(icon: Icons.apartment, label: 'Подразделения', subtitle: 'Институты и колледжи', color: Colors.indigo),
     _AdminCardItem(icon: Icons.calendar_today, label: 'Учебный план', subtitle: 'Импорт КУГ из Excel', color: Colors.deepPurple),
-    _AdminCardItem(icon: Icons.date_range, label: 'График недель', subtitle: 'Четность семестра', color: Colors.blueAccent), // ✅ Новый пункт
+    _AdminCardItem(icon: Icons.date_range, label: 'График недель', subtitle: 'Четность семестра', color: Colors.blueAccent),
+    _AdminCardItem(icon: Icons.map_outlined, label: 'Обновить корпуса', subtitle: 'Миграция старых пар', color: Colors.pink),
     _AdminCardItem(icon: Icons.support_agent, label: 'Техподдержка', subtitle: 'Обращения студентов', color: Color(0xFFFF6B35)),
     _AdminCardItem(icon: Icons.flag_outlined, label: 'Жалобы', subtitle: 'Сообщения из чатов групп', color: Color(0xFFB3261E)),
+    _AdminCardItem(icon: Icons.vpn_key, label: 'Список кодов групп', subtitle: 'Просмотр и копирование кодов', color: Colors.orange),
   ];
 
   @override
@@ -45,7 +51,7 @@ class AdminHomeScreen extends StatelessWidget {
           IconButton(icon: const Icon(Icons.logout), onPressed: () => _showLogoutDialog(context)),
         ],
       ),
-      backgroundColor: theme.scaffoldBackgroundColor, // ✅ Динамический фон
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: ListView.separated(
         padding: const EdgeInsets.all(AppTheme.s16),
         itemCount: _cards.length,
@@ -63,6 +69,7 @@ class AdminHomeScreen extends StatelessWidget {
     switch (label) {
       case 'Расписание': screen = const AdminScheduleScreen(); break;
       case 'Группы': screen = const AdminGroupsScreen(); break;
+      case 'Коды групп': _runGroupCodesMigration(context); return; // ✅ Запуск генерации кодов
       case 'Мероприятия': screen = const AdminEventsScreen(); break;
       case 'Студенты': screen = const AdminUsersScreen(); break;
       case 'Новости': screen = const AddNewsScreen(); break;
@@ -71,10 +78,91 @@ class AdminHomeScreen extends StatelessWidget {
       case 'Жалобы': screen = const AdminReportsScreen(); break;
       case 'Экспорт в Excel': screen = const AdminExportScreen(); break;
       case 'Учебный план': screen = const AdminCalendarImportScreen(); break;
-      case 'График недель': screen = const AdminImportCalendarScreen(); break; // ✅ Навигация
+      case 'График недель': screen = const AdminImportCalendarScreen(); break;
+      case 'Обновить корпуса': _runMigration(context); return;
+      case 'Список кодов групп': screen = const AdminGroupCodesScreen(); break;
     }
     if (screen != null) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => screen!));
+    }
+  }
+
+  // ✅ ФУНКЦИЯ МИГРАЦИИ КОДОВ ГРУПП
+  Future<void> _runGroupCodesMigration(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final count = await GroupCodeHelper.migrateExistingGroupsCodes(
+        onProgress: (done, total) {
+          debugPrint('Генерация кодов: $done / $total');
+        },
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context); // Закрываем индикатор загрузки
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Генерация завершена'),
+            content: Text('Успешно сгенерированы секретные коды для $count групп(ы).'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('ОК')),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Закрываем индикатор загрузки
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка генерации кодов: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // ✅ ФУНКЦИЯ МИГРАЦИИ КОРПУСОВ
+  Future<void> _runMigration(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final report = await migrateLessonsBuildings();
+
+      if (context.mounted) {
+        Navigator.pop(context);
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Миграция завершена'),
+            content: Text(
+                'Всего пар: ${report.total}\n'
+                    'Обновлено: ${report.updated}\n'
+                    'Пропущено (уже чистые): ${report.skipped}\n'
+                    'Ошибок: ${report.errors.length}'
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('ОК')),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка миграции: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -116,7 +204,7 @@ class _AdminTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Material(
-      color: theme.cardColor, // ✅ Динамический цвет карточки
+      color: theme.cardColor,
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),

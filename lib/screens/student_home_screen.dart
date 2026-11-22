@@ -15,9 +15,10 @@ import '../widgets/app_ui.dart';
 import '../widgets/user_avatar.dart';
 import 'gradebook_screen.dart';
 import 'indoor_map_screen.dart';
+import 'map_data.dart';
 import 'news_screen.dart';
 import 'profile_screen.dart';
-import 'schedule_screen.dart'; // <-- УБРАН ДУБЛИКАТ
+import 'schedule_screen.dart';
 import 'settings_screen.dart';
 import 'support_screen.dart';
 import 'tasks_screen.dart';
@@ -33,16 +34,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   int _index = 0;
   final Set<int> _visited = {0};
 
+  // ✅ Текущее здание карты живёт здесь, а не внутри IndoorMapScreen.
+  // Так смена здания не пушит новый маршрут и не ломает навигацию.
+  MapBuilding _mapBuilding = kMapBuildings.first;
+
   String _userName = '';
   String _userGroup = '';
   String _userInstitute = '';
-  int? _userSubgroup; // <-- Храним подгруппу
+  int? _userSubgroup;
   bool _isLoading = true;
 
   List<Lesson> _lessons = [];
   List<DateTime> _oddWeeks = [];
   String _subscribedGroup = '';
-  bool _lastNotificationsEnabled = SettingsService.instance.notificationsEnabled;
+  bool _lastNotificationsEnabled =
+      SettingsService.instance.notificationsEnabled;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _lessonsSub;
@@ -76,7 +82,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       setState(() => _isLoading = false);
       return;
     }
-    _userSub = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().listen((snapshot) {
+    _userSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((snapshot) {
       if (!mounted) return;
       final data = snapshot.data();
       if (data == null) {
@@ -84,12 +94,12 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         return;
       }
       final group = ((data['group'] as String?) ?? '').trim();
-      final subgroup = data['subgroup'] as int?; // <-- Получаем подгруппу
+      final subgroup = data['subgroup'] as int?;
 
       setState(() {
         _userName = ((data['name'] as String?) ?? '').trim();
         _userGroup = group;
-        _userSubgroup = subgroup; // <-- Сохраняем
+        _userSubgroup = subgroup;
         _userInstitute = ((data['institute'] as String?) ?? '').trim();
         _isLoading = false;
       });
@@ -108,8 +118,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       _rescheduleReminders();
       return;
     }
-    _lessonsSub = FirebaseFirestore.instance.collection('lessons').where('group', isEqualTo: group).snapshots().listen((snap) async {
-      final lessons = snap.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
+    _lessonsSub = FirebaseFirestore.instance
+        .collection('lessons')
+        .where('group', isEqualTo: group)
+        .snapshots()
+        .listen((snap) async {
+      final lessons =
+      snap.docs.map((d) => Lesson.fromMap(d.id, d.data())).toList();
       final odd = await ScheduleService.loadOddWeeks();
       if (!mounted) return;
       setState(() {
@@ -121,11 +136,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   void _rescheduleReminders() {
-    // Теперь передаем подгруппу в напоминания
     ScheduleService.rescheduleReminders(
       _lessons,
       _oddWeeks,
-      userSubgroup: _userSubgroup, // <-- Передаем подгруппу
+      userSubgroup: _userSubgroup,
     ).catchError((e) {
       debugPrint('Ошибка планирования напоминаний: $e');
     });
@@ -139,7 +153,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           userName: _userName,
           userGroup: _userGroup,
           userInstitute: _userInstitute,
-          userSubgroup: _userSubgroup, // <-- Передаем подгруппу
+          userSubgroup: _userSubgroup,
           isLoading: _isLoading,
           lessons: _lessons,
           oddWeeks: _oddWeeks,
@@ -148,7 +162,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       case 1:
         return const ScheduleScreen(embedded: true);
       case 2:
-        return const IndoorMapScreen();
+      // ✅ Карта: сообщаем ей, как возвращаться и как менять здание.
+        return IndoorMapScreen(
+          key: ValueKey(_mapBuilding.id),
+          buildingId: _mapBuilding.id,
+          buildingName: _mapBuilding.name,
+          floors: _mapBuilding.floors,
+          onBack: () => _selectTab(0),
+          onBuildingSelected: (b) {
+            setState(() => _mapBuilding = b);
+          },
+        );
       case 3:
         return const NewsScreen(embedded: true);
       default:
@@ -173,9 +197,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         final homeLabel = langCode == 'en' ? 'Home' : 'Главная';
 
         return PopScope(
+          // ✅ «Назад» с вкладок 1–4 → главная. На главной → выход.
           canPop: _index == 0,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _selectTab(0);
+            if (didPop) return;
+            _selectTab(0);
           },
           child: Scaffold(
             body: IndexedStack(
@@ -186,11 +212,26 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               selectedIndex: _index,
               onDestinationSelected: _selectTab,
               destinations: [
-                NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home), label: homeLabel),
-                NavigationDestination(icon: const Icon(Icons.calendar_today_outlined), selectedIcon: const Icon(Icons.calendar_today), label: t('schedule')),
-                NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: t('map')),
-                NavigationDestination(icon: const Icon(Icons.newspaper_outlined), selectedIcon: const Icon(Icons.newspaper), label: t('news')),
-                NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: t('profile')),
+                NavigationDestination(
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: homeLabel),
+                NavigationDestination(
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    selectedIcon: const Icon(Icons.calendar_today),
+                    label: t('schedule')),
+                NavigationDestination(
+                    icon: const Icon(Icons.map_outlined),
+                    selectedIcon: const Icon(Icons.map),
+                    label: t('map')),
+                NavigationDestination(
+                    icon: const Icon(Icons.newspaper_outlined),
+                    selectedIcon: const Icon(Icons.newspaper),
+                    label: t('news')),
+                NavigationDestination(
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person),
+                    label: t('profile')),
               ],
             ),
           ),
@@ -204,7 +245,7 @@ class _HomeTab extends StatefulWidget {
   final String userName;
   final String userGroup;
   final String userInstitute;
-  final int? userSubgroup; // <-- Добавили подгруппу
+  final int? userSubgroup;
   final bool isLoading;
   final List<Lesson> lessons;
   final List<DateTime> oddWeeks;
@@ -214,7 +255,7 @@ class _HomeTab extends StatefulWidget {
     required this.userName,
     required this.userGroup,
     required this.userInstitute,
-    required this.userSubgroup, // <-- Добавили
+    required this.userSubgroup,
     required this.isLoading,
     required this.lessons,
     required this.oddWeeks,
@@ -237,7 +278,10 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   String _firstName() {
-    final parts = widget.userName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    final parts = widget.userName
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '';
     return parts.length >= 2 ? parts[1] : parts[0];
   }
@@ -274,7 +318,7 @@ class _HomeTabState extends State<_HomeTab> {
                   lessons: widget.lessons,
                   oddWeeks: widget.oddWeeks,
                   dateReady: _dateReady,
-                  userSubgroup: widget.userSubgroup, // <-- Передаем в блок
+                  userSubgroup: widget.userSubgroup,
                 ),
               AppSectionLabel(t('services')),
               _buildQuickActions(context, t),
@@ -295,32 +339,62 @@ class _HomeTabState extends State<_HomeTab> {
       dateText = s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1);
     }
     final first = _firstName();
-    final greeting = widget.isLoading ? _greeting(langCode) : (first.isEmpty ? _greeting(langCode) : '${_greeting(langCode)}, $first');
+    final greeting = widget.isLoading
+        ? _greeting(langCode)
+        : (first.isEmpty
+        ? _greeting(langCode)
+        : '${_greeting(langCode)}, $first');
 
-    return Container(
-      color: bg,
-      child: SafeArea(
-        bottom: false,
+    // Оборачиваем весь контейнер шапки в SafeArea, чтобы фон шапки
+    // закрашивал статус-бар, а контент внутри сместился ниже «челки».
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        color: bg,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
           child: Row(
             children: [
               GestureDetector(
                 onTap: widget.onOpenProfile,
-                child: UserAvatar(userId: FirebaseAuth.instance.currentUser?.uid, size: 48, backgroundColor: Colors.white.withValues(alpha: 0.15), icon: Icons.person),
+                child: UserAvatar(
+                    userId: FirebaseAuth.instance.currentUser?.uid,
+                    size: 48,
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    icon: Icons.person),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (dateText.isNotEmpty) Text(dateText, style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)),
-                    Text(greeting, style: TextStyle(color: fg, fontSize: 19, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    if (widget.userGroup.isNotEmpty) Text(widget.userGroup, style: TextStyle(color: fg.withValues(alpha: 0.8), fontSize: 12)),
+                    if (dateText.isNotEmpty)
+                      Text(dateText,
+                          style: TextStyle(
+                              color: fg.withValues(alpha: 0.8),
+                              fontSize: 12)),
+                    Text(greeting,
+                        style: TextStyle(
+                            color: fg,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    if (widget.userGroup.isNotEmpty)
+                      Text(widget.userGroup,
+                          style: TextStyle(
+                              color: fg.withValues(alpha: 0.8),
+                              fontSize: 12)),
                   ],
                 ),
               ),
-              IconButton(icon: Icon(Icons.settings_outlined, color: fg), tooltip: 'Настройки', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+              IconButton(
+                  icon: Icon(Icons.settings_outlined, color: fg),
+                  tooltip: 'Настройки',
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen()))),
             ],
           ),
         ),
@@ -334,22 +408,32 @@ class _HomeTabState extends State<_HomeTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Укажите группу', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const Text('Укажите группу',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('После этого здесь появятся ближайшие пары', style: TextStyle(fontSize: 13, color: appMutedColor(context))),
+          Text('После этого здесь появятся ближайшие пары',
+              style: TextStyle(
+                  fontSize: 13, color: appMutedColor(context))),
           const SizedBox(height: 12),
-          FilledButton(onPressed: widget.onOpenProfile, child: const Text('Открыть профиль')),
+          FilledButton(
+              onPressed: widget.onOpenProfile,
+              child: const Text('Открыть профиль')),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, String Function(String) t) {
+  Widget _buildQuickActions(
+      BuildContext context, String Function(String) t) {
     final items = <_QuickAction>[
-      _QuickAction(Icons.assignment_outlined, t('tasks'), () => const TasksEntry()),
-      _QuickAction(Icons.people_outline, t('union'), () => const UnionHomeScreen()),
-      _QuickAction(Icons.menu_book_outlined, t('gradebook'), () => const GradebookScreen()),
-      _QuickAction(Icons.support_agent, t('support'), () => const SupportScreen()),
+      _QuickAction(Icons.assignment_outlined, t('tasks'),
+              () => const TasksEntry()),
+      _QuickAction(Icons.people_outline, t('union'),
+              () => const UnionHomeScreen()),
+      _QuickAction(Icons.menu_book_outlined, t('gradebook'),
+              () => const GradebookScreen()),
+      _QuickAction(Icons.support_agent, t('support'),
+              () => const SupportScreen()),
     ];
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,14 +442,21 @@ class _HomeTabState extends State<_HomeTab> {
           Expanded(
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.builder())),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => item.builder())),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(
                   children: [
                     AppIconBox(item.icon, size: 52),
                     const SizedBox(height: 6),
-                    Text(item.label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text(item.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -376,18 +467,17 @@ class _HomeTabState extends State<_HomeTab> {
   }
 }
 
-// ✅ ВЫНЕСЕННЫЙ БЛОК «СЕЙЧАС / ДАЛЬШЕ»
 class _NowNextBlock extends StatefulWidget {
   final List<Lesson> lessons;
   final List<DateTime> oddWeeks;
   final bool dateReady;
-  final int? userSubgroup; // <-- Добавили подгруппу
+  final int? userSubgroup;
 
   const _NowNextBlock({
     required this.lessons,
     required this.oddWeeks,
     required this.dateReady,
-    required this.userSubgroup, // <-- Добавили
+    required this.userSubgroup,
   });
 
   @override
@@ -424,7 +514,8 @@ class _NowNextBlockState extends State<_NowNextBlock> {
     return '${date.day}.${date.month.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildLessonCard(BuildContext context, LessonOccurrence o, DateTime now, {required bool isCurrent}) {
+  Widget _buildLessonCard(BuildContext context, LessonOccurrence o,
+      DateTime now, {required bool isCurrent}) {
     final lesson = o.lesson;
     final endFmt = DateFormat('HH:mm');
     final startFmt = DateFormat('HH:mm');
@@ -442,12 +533,22 @@ class _NowNextBlockState extends State<_NowNextBlock> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppBadge(isCurrent ? 'Идёт сейчас' : 'Дальше · ${_dayLabel(o.start)}', tone: isCurrent ? AppTone.success : AppTone.accent),
-              Text(isCurrent ? 'до ${endFmt.format(o.end)}' : '${startFmt.format(o.start)}–${endFmt.format(o.end)}', style: TextStyle(fontSize: 12, color: muted)),
+              AppBadge(
+                  isCurrent ? 'Идёт сейчас' : 'Дальше · ${_dayLabel(o.start)}',
+                  tone: isCurrent ? AppTone.success : AppTone.accent),
+              Text(
+                  isCurrent
+                      ? 'до ${endFmt.format(o.end)}'
+                      : '${startFmt.format(o.start)}–${endFmt.format(o.end)}',
+                  style: TextStyle(fontSize: 12, color: muted)),
             ],
           ),
           const SizedBox(height: 10),
-          Text(lesson.subject, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(lesson.subject,
+              style: const TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w700),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
           if (details.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(details, style: TextStyle(fontSize: 13, color: muted)),
@@ -456,7 +557,12 @@ class _NowNextBlockState extends State<_NowNextBlock> {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(value: o.progressAt(now), minHeight: 6, backgroundColor: appAccentSoftColor(context), valueColor: AlwaysStoppedAnimation<Color>(appAccentColor(context))),
+              child: LinearProgressIndicator(
+                  value: o.progressAt(now),
+                  minHeight: 6,
+                  backgroundColor: appAccentSoftColor(context),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      appAccentColor(context))),
             ),
           ],
           if (lesson.room.isNotEmpty) ...[
@@ -464,7 +570,8 @@ class _NowNextBlockState extends State<_NowNextBlock> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => IndoorMapScreen.openForRoom(context, lesson.room),
+                onPressed: () =>
+                    IndoorMapScreen.openForRoom(context, lesson.room),
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: const Text('Показать на карте'),
               ),
@@ -486,20 +593,38 @@ class _NowNextBlockState extends State<_NowNextBlock> {
           Container(
             width: 56,
             padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(color: appAccentSoftColor(context), borderRadius: BorderRadius.circular(8)),
-            child: Text(fmt.format(o.start), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800, color: appAccentColor(context))),
+            decoration: BoxDecoration(
+                color: appAccentSoftColor(context),
+                borderRadius: BorderRadius.circular(8)),
+            child: Text(fmt.format(o.start),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: appAccentColor(context))),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Дальше: ${lesson.subject}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(lesson.room.isEmpty ? _dayLabel(o.start) : 'кабинет ${lesson.room} · ${_dayLabel(o.start)}', style: TextStyle(fontSize: 12, color: appMutedColor(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('Дальше: ${lesson.subject}',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                Text(
+                    lesson.room.isEmpty
+                        ? _dayLabel(o.start)
+                        : 'кабинет ${lesson.room} · ${_dayLabel(o.start)}',
+                    style: TextStyle(
+                        fontSize: 12, color: appMutedColor(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, size: 20, color: appMutedColor(context)),
+          Icon(Icons.chevron_right,
+              size: 20, color: appMutedColor(context)),
         ],
       ),
     );
@@ -516,8 +641,12 @@ class _NowNextBlockState extends State<_NowNextBlock> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Ближайших пар нет', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                Text('Можно отдохнуть', style: TextStyle(fontSize: 13, color: appMutedColor(context))),
+                const Text('Ближайших пар нет',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('Можно отдохнуть',
+                    style: TextStyle(
+                        fontSize: 13, color: appMutedColor(context))),
               ],
             ),
           ),
@@ -529,13 +658,12 @@ class _NowNextBlockState extends State<_NowNextBlock> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    // ✅ Передаем подгруппу в поиск текущей пары
     final list = ScheduleService.occurrences(
       widget.lessons,
       now,
       widget.oddWeeks,
       days: 14,
-      userSubgroup: widget.userSubgroup, // <-- ВОТ СЮДА
+      userSubgroup: widget.userSubgroup,
     );
     final current = ScheduleService.current(list, now);
     final next = ScheduleService.next(list, now);

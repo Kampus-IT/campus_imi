@@ -5,10 +5,10 @@ class Subject {
   final String studentUid;
   final String group;
   final String name;
-  final String type;      // Экзамен, Зачет, Диф.зачет
+  final String type;
   final String teacher;
-  final int? grade;       // 5, 4, 3, 2 (null, если зачет)
-  final String gradeText; // "Зачет", "Незачет"
+  final int? grade;
+  final String gradeText;
   final int semester;
   final int hours;
   final double credits;
@@ -57,7 +57,6 @@ class Subject {
     'updatedAt': FieldValue.serverTimestamp(),
   };
 
-  // Фабричный конструктор для создания пустого объекта
   factory Subject.empty() {
     return const Subject(
       id: '',
@@ -72,7 +71,7 @@ class Subject {
     );
   }
 
-  // Копирование с изменениями
+
   Subject copyWith({
     String? id,
     String? studentUid,

@@ -1,11 +1,12 @@
 {
-    "name": "campus_imi",
-    "short_name": "campus_imi",
-    "start_url": ".",
+    "name": "Kampus-IT NEFU",
+    "short_name": "Kampus-IT NEFU",
+    "start_url": "/campus_imi/",
+    "scope": "/campus_imi/",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Kampus-IT NEFU твой цифровой кампус",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

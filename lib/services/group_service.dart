@@ -171,10 +171,28 @@ class GroupRepo {
         .map((s) => s.docs.map((d) => d.id).toSet());
   }
 
-  Future<void> blockAuthor(String authorId) {
+  /// Список заблокированных: ID + имя. Один запрос, без чтения users.
+  Stream<List<Map<String, String>>> blockedAuthorsWithNames() {
+    return _db
+        .collection('users/$uid/blocked')
+        .snapshots()
+        .map((s) => s.docs
+        .map((d) => {
+      'id': d.id,
+      'name': (d.data()['name'] ?? 'Пользователь').toString(),
+    })
+        .toList());
+  }
+
+  /// Блокируем автора. Сохраняем его имя сразу в документ,
+  /// чтобы потом не делать лишних чтений при показе списка.
+  Future<void> blockAuthor(String authorId, {String? authorName}) {
     return _db
         .doc('users/$uid/blocked/$authorId')
-        .set({'createdAt': FieldValue.serverTimestamp()});
+        .set({
+      'createdAt': FieldValue.serverTimestamp(),
+      'name': authorName ?? 'Пользователь',
+    });
   }
 
   Future<void> unblockAuthor(String authorId) {

@@ -1,5 +1,4 @@
-import '../utils/error_text.dart';
-import '../widgets/app_ui.dart';
+// lib/screens/admin_events_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +7,7 @@ import '../models/event_model.dart';
 import '../models/user_model.dart';
 import '../services/event_service.dart';
 import '../services/user_service.dart';
+import '../services/cache_service.dart';
 import 'event_participants_screen.dart';
 
 class AdminEventsScreen extends StatefulWidget {
@@ -26,10 +26,14 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
   UserRole _role = UserRole.student;
   bool _isRoleLoaded = false;
 
+  List<Event>? _events;
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
     _loadRole();
+    _loadEvents();
   }
 
   Future<void> _loadRole() async {
@@ -42,14 +46,48 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     }
   }
 
+  Future<void> _loadEvents({bool forceRefresh = false}) async {
+    final cached = await CacheService.loadAdminEvents();
+    if (cached.isNotEmpty && mounted) {
+      setState(() {
+        _events = cached
+            .map((m) => Event.fromMap(m['id'] as String? ?? '', m))
+            .toList();
+      });
+    }
+
+    final isFresh = await CacheService.isAdminEventsFresh();
+    if (isFresh && cached.isNotEmpty && !forceRefresh) return;
+
+    if (mounted) setState(() => _isRefreshing = true);
+    try {
+      final events = await _eventService.getEventsOnce();
+      final raw = events.map((e) => {'id': e.id, ...e.toMap()}).toList();
+      await CacheService.saveAdminEvents(raw);
+      if (mounted) setState(() => _events = events);
+    } catch (e) {
+      debugPrint('Ошибка загрузки мероприятий: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить мероприятия')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await CacheService.invalidateAdminEvents();
+    await _loadEvents(forceRefresh: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (!_isRoleLoaded) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -58,21 +96,17 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
         actions: [
           if (_role == UserRole.admin)
             IconButton(
-              icon: Icon(
-                _onlyMyEvents ? Icons.person : Icons.person_outline,
-                color: Colors.white,
-              ),
+              icon: Icon(_onlyMyEvents ? Icons.person : Icons.person_outline,
+                  color: Colors.white),
               tooltip: _onlyMyEvents ? 'Показать все' : 'Только мои',
-              onPressed: () {
-                setState(() => _onlyMyEvents = !_onlyMyEvents);
-              },
+              onPressed: () =>
+                  setState(() => _onlyMyEvents = !_onlyMyEvents),
             ),
         ],
       ),
       backgroundColor: AppTheme.backgroundGray,
       body: Column(
         children: [
-          // Фильтры
           Container(
             color: AppTheme.cardWhite,
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -80,63 +114,27 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _FilterChip(
-                  label: 'Все',
-                  selected: _filter == 'all',
-                  onTap: () => setState(() => _filter = 'all'),
-                ),
+                    label: 'Все',
+                    selected: _filter == 'all',
+                    onTap: () => setState(() => _filter = 'all')),
                 _FilterChip(
-                  label: 'Активные',
-                  selected: _filter == 'active',
-                  onTap: () => setState(() => _filter = 'active'),
-                ),
+                    label: 'Активные',
+                    selected: _filter == 'active',
+                    onTap: () => setState(() => _filter = 'active')),
                 _FilterChip(
-                  label: 'Завершённые',
-                  selected: _filter == 'finished',
-                  onTap: () => setState(() => _filter = 'finished'),
-                ),
+                    label: 'Завершённые',
+                    selected: _filter == 'finished',
+                    onTap: () => setState(() => _filter = 'finished')),
               ],
             ),
           ),
-
-          // Список
+          if (_isRefreshing) const LinearProgressIndicator(minHeight: 2),
           Expanded(
-            child: StreamBuilder<List<Event>>(
-              stream: _eventService.getEvents(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return const AppErrorState();
-                }
-
-                var events = snapshot.data ?? [];
-
-                if (_onlyMyEvents && currentUser != null) {
-                  events = events
-                      .where((e) => e.organizerId == currentUser.uid)
-                      .toList();
-                }
-
-                if (_filter == 'active') {
-                  events = events.where((e) => !e.isFinished).toList();
-                } else if (_filter == 'finished') {
-                  events = events.where((e) => e.isFinished).toList();
-                }
-
-                if (events.isEmpty) return _buildEmptyState();
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: events.length,
-                  itemBuilder: (context, i) => _AdminEventCard(
-                    event: events[i],
-                    currentUserId: currentUser?.uid,
-                    currentRole: _role,
-                    onTap: () => _openEditor(events[i]),
-                  ),
-                );
-              },
+            child: _events == null
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: _buildEventsList(currentUser),
             ),
           ),
         ],
@@ -144,17 +142,49 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     );
   }
 
+  Widget _buildEventsList(User? currentUser) {
+    var events = List<Event>.from(_events!);
+
+    if (_onlyMyEvents && currentUser != null) {
+      events = events.where((e) => e.organizerId == currentUser.uid).toList();
+    }
+
+    if (_filter == 'active') {
+      events = events.where((e) => !e.isFinished).toList();
+    } else if (_filter == 'finished') {
+      events = events.where((e) => e.isFinished).toList();
+    }
+
+    if (events.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [_buildEmptyState()],
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      itemCount: events.length,
+      itemBuilder: (context, i) => _AdminEventCard(
+        event: events[i],
+        currentUserId: currentUser?.uid,
+        currentRole: _role,
+        onTap: () => _openEditor(events[i]),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
-    return Center(
+    return Padding(
+      padding: const EdgeInsets.only(top: 64),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.event_busy, size: 64, color: AppTheme.textMuted),
           const SizedBox(height: 16),
-          const Text(
-            'Мероприятий не найдено',
-            style: TextStyle(fontSize: 18, color: AppTheme.textMuted),
-          ),
+          const Text('Мероприятий не найдено',
+              style: TextStyle(fontSize: 18, color: AppTheme.textMuted)),
           const SizedBox(height: 8),
           Text(
             _onlyMyEvents
@@ -165,22 +195,22 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
                 ? 'Нет завершённых мероприятий'
                 : 'Создайте первое мероприятие',
             style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.textMuted.withValues(alpha: 0.7),
-            ),
+                fontSize: 13, color: AppTheme.textMuted.withValues(alpha: 0.7)),
           ),
         ],
       ),
     );
   }
 
-  void _openEditor(Event event) {
-    Navigator.push(
+  void _openEditor(Event event) async {
+    final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => EventEditorScreen(event: event),
-      ),
+      MaterialPageRoute(builder: (_) => EventEditorScreen(event: event)),
     );
+    if (result == true) {
+      await CacheService.invalidateAdminEvents();
+      await _loadEvents(forceRefresh: true);
+    }
   }
 }
 
@@ -206,8 +236,7 @@ class _FilterChip extends StatelessWidget {
           color: selected ? AppTheme.primaryNavy : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppTheme.primaryNavy : AppTheme.divider,
-          ),
+              color: selected ? AppTheme.primaryNavy : AppTheme.divider),
         ),
         child: Text(
           label,
@@ -274,25 +303,19 @@ class _AdminEventCard extends StatelessWidget {
                           color: AppTheme.accentBlue,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'ВАШЕ',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                        child: const Text('ВАШЕ',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5)),
                       ),
                     Expanded(
-                      child: Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
-                        ),
-                      ),
+                      child: Text(event.title,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textDark)),
                     ),
                     _StatusBadge(event: event),
                   ],
@@ -303,33 +326,28 @@ class _AdminEventCard extends StatelessWidget {
                     const Icon(Icons.calendar_today,
                         size: 13, color: AppTheme.textMuted),
                     const SizedBox(width: 4),
-                    Text(
-                      '${event.date} • ${event.time}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textMuted),
-                    ),
+                    Text('${event.date} • ${event.time}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.textMuted)),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
                     _StatChip(
-                      icon: Icons.group,
-                      label: '${event.participants.length}',
-                      color: AppTheme.accentBlue,
-                    ),
+                        icon: Icons.group,
+                        label: '${event.participants.length}',
+                        color: AppTheme.accentBlue),
                     const SizedBox(width: 8),
                     _StatChip(
-                      icon: Icons.check_circle,
-                      label: '${event.attended.length}',
-                      color: Colors.green,
-                    ),
+                        icon: Icons.check_circle,
+                        label: '${event.attended.length}',
+                        color: Colors.green),
                     const SizedBox(width: 8),
                     _StatChip(
-                      icon: Icons.star,
-                      label: '+${event.points}',
-                      color: AppTheme.gold,
-                    ),
+                        icon: Icons.star,
+                        label: '+${event.points}',
+                        color: AppTheme.gold),
                     const Spacer(),
                     if (canManage)
                       const Icon(Icons.edit,
@@ -344,12 +362,10 @@ class _AdminEventCard extends StatelessWidget {
                           size: 12, color: AppTheme.textMuted),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(
-                          'Организатор: ${event.organizer}',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppTheme.textMuted),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text('Организатор: ${event.organizer}',
+                            style: const TextStyle(
+                                fontSize: 11, color: AppTheme.textMuted),
+                            overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ),
@@ -401,14 +417,9 @@ class _StatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, color: color, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -440,14 +451,9 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, color: color, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -553,8 +559,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         debugPrint('Ошибка: $e');
       }
 
-      final points = int.tryParse(_pointsController.text.trim()) ??
-          widget.event.points;
+      final points =
+          int.tryParse(_pointsController.text.trim()) ?? widget.event.points;
 
       if (_role == UserRole.activist && points > 20) {
         throw Exception('Активист может ставить не более 20 баллов');
@@ -572,6 +578,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       );
 
       await _eventService.updateEvent(updatedEvent);
+      await CacheService.invalidateAdminEvents();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -587,7 +594,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(friendlyError(e)),
+            content: Text(e.toString()),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -611,9 +618,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Отмена')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -627,6 +633,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
 
     try {
       await _eventService.finalizeEvent(widget.event.id);
+      await CacheService.invalidateAdminEvents();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -641,9 +648,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(friendlyError(e)),
-            backgroundColor: Colors.red,
-          ),
+              content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     }
@@ -658,9 +663,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
             'Мероприятие "${widget.event.title}" будет удалено навсегда.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Отмена')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -674,6 +678,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
 
     try {
       await _eventService.deleteEvent(widget.event.id);
+      await CacheService.invalidateAdminEvents();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -682,15 +687,13 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(friendlyError(e)),
-            backgroundColor: Colors.red,
-          ),
+              content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     }
@@ -747,7 +750,6 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
             ),
           ),
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -766,7 +768,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
               const SizedBox(height: 12),
               _InfoLine(icon: Icons.calendar_today, text: widget.event.date),
               _InfoLine(icon: Icons.access_time, text: widget.event.time),
-              _InfoLine(icon: Icons.location_on, text: widget.event.location),
+              _InfoLine(
+                  icon: Icons.location_on, text: widget.event.location),
               _InfoLine(icon: Icons.person, text: widget.event.organizer),
               _InfoLine(
                   icon: Icons.star,
@@ -776,7 +779,6 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -800,7 +802,6 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -812,47 +813,47 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
             children: [
               Expanded(
                 child: _BigStat(
-                  icon: Icons.group,
-                  value: '${widget.event.participants.length}',
-                  label: 'Записались',
-                  color: AppTheme.accentBlue,
-                ),
+                    icon: Icons.group,
+                    value: '${widget.event.participants.length}',
+                    label: 'Записались',
+                    color: AppTheme.accentBlue),
               ),
               Container(width: 1, height: 50, color: AppTheme.divider),
               Expanded(
                 child: _BigStat(
-                  icon: Icons.check_circle,
-                  value: '${widget.event.attended.length}',
-                  label: 'Пришли',
-                  color: Colors.green,
-                ),
+                    icon: Icons.check_circle,
+                    value: '${widget.event.attended.length}',
+                    label: 'Пришли',
+                    color: Colors.green),
               ),
               Container(width: 1, height: 50, color: AppTheme.divider),
               Expanded(
                 child: _BigStat(
-                  icon: Icons.star,
-                  value:
-                  '+${widget.event.points * widget.event.attended.length}',
-                  label: 'Баллов',
-                  color: AppTheme.gold,
-                ),
+                    icon: Icons.star,
+                    value:
+                    '+${widget.event.points * widget.event.attended.length}',
+                    label: 'Баллов',
+                    color: AppTheme.gold),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) =>
                       EventParticipantsScreen(event: widget.event),
                 ),
               );
+              if (result == true) {
+                await CacheService.invalidateAdminEvents();
+                if (mounted) setState(() {});
+              }
             },
             icon: const Icon(Icons.people_outline),
             label: Text('Участники (${widget.event.participants.length})'),
@@ -860,13 +861,12 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
               backgroundColor: AppTheme.primaryNavy,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           ),
         ),
         const SizedBox(height: 12),
-
         if (!widget.event.finalized)
           SizedBox(
             width: double.infinity,
@@ -883,9 +883,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
               ),
             ),
           ),
-
         if (!widget.event.finalized) const SizedBox(height: 12),
-
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
@@ -917,25 +915,21 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-            child:
-            _buildField('Дата', _dateController, Icons.calendar_today),
-          ),
+              child:
+              _buildField('Дата', _dateController, Icons.calendar_today)),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildField('Время', _timeController, Icons.access_time),
-          ),
+              child: _buildField('Время', _timeController, Icons.access_time)),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-            child:
-            _buildField('До конца', _endDateController, Icons.event_busy),
-          ),
+              child: _buildField(
+                  'До конца', _endDateController, Icons.event_busy)),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildField(
-                'Время', _endTimeController, Icons.timer_off),
-          ),
+              child:
+              _buildField('Время', _endTimeController, Icons.timer_off)),
         ]),
         const SizedBox(height: 12),
         _buildField('Место', _locationController, Icons.location_on),
@@ -1007,11 +1001,9 @@ class _InfoLine extends StatelessWidget {
           Icon(icon, size: 16, color: color ?? AppTheme.textMuted),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              text,
-              style:
-              TextStyle(fontSize: 14, color: color ?? AppTheme.textDark),
-            ),
+            child: Text(text,
+                style: TextStyle(
+                    fontSize: 14, color: color ?? AppTheme.textDark)),
           ),
         ],
       ),
@@ -1038,19 +1030,12 @@ class _BigStat extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
+        Text(value,
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w700, color: color)),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
       ],
     );
   }

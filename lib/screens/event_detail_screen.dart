@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_ui.dart';
 import '../widgets/user_avatar.dart';
 import 'event_participants_screen.dart';
+import 'full_screen_image_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final Event event;
@@ -36,7 +36,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void initState() {
     super.initState();
     _event = widget.event;
-    // Следим за мероприятием: число записавшихся и статус всегда актуальны.
     _sub = FirebaseFirestore.instance
         .collection('events')
         .doc(widget.event.id)
@@ -45,7 +44,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       if (!mounted) return;
       final data = snap.data();
       if (!snap.exists || data == null) {
-        // Мероприятие удалили, пока экран был открыт.
         Navigator.of(context).maybePop();
         return;
       }
@@ -103,7 +101,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   ImageProvider? _eventImage() {
-    if (_event.imageUrl.startsWith('https://')) return NetworkImage(_event.imageUrl);
+    if (_event.imageUrl.startsWith('https://') || _event.imageUrl.startsWith('http://')) {
+      return NetworkImage(_event.imageUrl);
+    }
     if (_event.imageBase64.isNotEmpty) {
       try {
         return MemoryImage(base64Decode(_event.imageBase64));
@@ -113,30 +113,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   void _openFullImage(ImageProvider imageProvider) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          children: [
-            InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4,
-              child: Center(child: Image(image: imageProvider)),
-            ),
-            Positioned(
-              top: 40,
-              right: 20,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                tooltip: 'Закрыть',
-                onPressed: () => Navigator.pop(ctx),
-                style: IconButton.styleFrom(backgroundColor: Colors.black54),
-              ),
-            ),
-          ],
-        ),
+    final List<String> images = [];
+    if (_event.imageUrl.isNotEmpty) {
+      images.add(_event.imageUrl);
+    } else if (_event.imageBase64.isNotEmpty) {
+      images.add(_event.imageBase64);
+    }
+
+    if (images.isEmpty) return;
+
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (_, __, ___) => FullScreenImageScreen(images: images, initialIndex: 0),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
       ),
     );
   }
@@ -190,29 +182,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ✅ БЛОК КАРТИНКИ (Адаптивный, как в новостях)
             if (image != null)
               GestureDetector(
                 onTap: () => _openFullImage(image),
-                child: SizedBox(
-                  height: 240,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                        child: Image(image: image, fit: BoxFit.cover),
-                      ),
-                      Container(color: Colors.black.withValues(alpha: 0.4)),
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Image(image: image, fit: BoxFit.contain),
-                        ),
-                      ),
-                    ],
+                child: _AutoAspectImage(
+                  provider: image,
+                  placeholder: Container(
+                    height: 240,
+                    color: AppTheme.lightBlue,
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
                 ),
               ),
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -287,7 +270,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Text(
                         _event.description,
-                        style: const TextStyle(fontSize: 14, height: 1.6),
+                        style: const TextStyle(fontSize: 15, height: 1.6),
                       ),
                     ),
                   ],
@@ -365,6 +348,77 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             child: const Text('Удалить', style: TextStyle(color: AppTheme.danger)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// ✅ Класс, который автоматически подбирает пропорции картинки,
+/// чтобы ничего не обрезалось (как в новостях).
+class _AutoAspectImage extends StatefulWidget {
+  final ImageProvider? provider;
+  final Widget placeholder;
+  const _AutoAspectImage({required this.provider, required this.placeholder});
+
+  @override
+  State<_AutoAspectImage> createState() => _AutoAspectImageState();
+}
+
+class _AutoAspectImageState extends State<_AutoAspectImage> {
+  double? _aspectRatio;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AutoAspectImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.provider != widget.provider) {
+      _aspectRatio = null;
+      _resolve();
+    }
+  }
+
+  void _resolve() {
+    final p = widget.provider;
+    if (p == null) return;
+    final stream = p.resolve(const ImageConfiguration());
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+          (info, _) {
+        if (!mounted) {
+          stream.removeListener(listener);
+          return;
+        }
+        setState(() => _aspectRatio = info.image.width / info.image.height);
+        stream.removeListener(listener);
+      },
+      onError: (_, __) {
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = widget.provider;
+    if (provider == null) return widget.placeholder;
+
+    return AspectRatio(
+      aspectRatio: _aspectRatio ?? (16 / 9),
+      child: Image(
+        image: provider,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => widget.placeholder,
+        loadingBuilder: (_, child, progress) {
+          if (progress == null) return child;
+          return widget.placeholder;
+        },
       ),
     );
   }

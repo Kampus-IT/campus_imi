@@ -112,7 +112,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
             .add(lesson.toMap());
       }
 
-      // ✅ Сохраняем группу в отдельную коллекцию
+      //  Сохраняем группу в отдельную коллекцию
       await FirebaseFirestore.instance
           .collection('groups')
           .doc(_selectedGroup)
@@ -121,7 +121,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.isEditing ? '✅ Занятие обновлено!' : '✅ Занятие добавлено!'),
+            content: Text(widget.isEditing ? ' Занятие обновлено!' : ' Занятие добавлено!'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -236,7 +236,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ✅ Группа теперь с поиском
+              // Группа с поиском
               _SectionTitle('Группа'),
               const SizedBox(height: 8),
               StreamBuilder<QuerySnapshot>(
@@ -261,7 +261,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                     _selectedGroup = finalGroups.first;
                   }
 
-                  // ✅ DropdownMenu с встроенным поиском
+                  // DropdownMenu с встроенным поиском
                   return DropdownMenu<String>(
                     initialSelection: _selectedGroup,
                     width: double.infinity,

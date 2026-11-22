@@ -5,23 +5,17 @@ enum LessonType { lecture, lab, seminar }
 extension LessonTypeExtension on LessonType {
   String get label {
     switch (this) {
-      case LessonType.lecture:
-        return 'Лекция';
-      case LessonType.lab:
-        return 'Лаб. работа';
-      case LessonType.seminar:
-        return 'Семинар';
+      case LessonType.lecture: return 'Лекция';
+      case LessonType.lab: return 'Лаб. работа';
+      case LessonType.seminar: return 'Семинар';
     }
   }
 
   Color get color {
     switch (this) {
-      case LessonType.lecture:
-        return const Color(0xFF3D6FA3);
-      case LessonType.lab:
-        return const Color(0xFF2E7D52);
-      case LessonType.seminar:
-        return const Color(0xFF8A5A00);
+      case LessonType.lecture: return const Color(0xFF3D6FA3);
+      case LessonType.lab: return const Color(0xFF2E7D52);
+      case LessonType.seminar: return const Color(0xFF8A5A00);
     }
   }
 }
@@ -36,7 +30,8 @@ class Lesson {
   final int dayIndex;
   final String group;
   final int week;
-  final int? subgroup; // 1, 2 или null (для всей группы)
+  final int? subgroup;
+  final String building;
 
   const Lesson({
     required this.id,
@@ -49,6 +44,7 @@ class Lesson {
     required this.group,
     this.week = 0,
     this.subgroup,
+    this.building = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -62,6 +58,7 @@ class Lesson {
       'group': group,
       'week': week,
       if (subgroup != null) 'subgroup': subgroup,
+      'building': building,
     };
   }
 
@@ -80,6 +77,7 @@ class Lesson {
       group: (map['group'] ?? '').toString().trim(),
       week: int.tryParse(weekRaw?.toString().trim() ?? '0') ?? 0,
       subgroup: map['subgroup'] as int?,
+      building: (map['building'] ?? '').toString().trim(),
     );
   }
 
@@ -94,6 +92,7 @@ class Lesson {
     String? group,
     int? week,
     int? subgroup,
+    String? building,
   }) {
     return Lesson(
       id: id ?? this.id,
@@ -106,6 +105,7 @@ class Lesson {
       group: group ?? this.group,
       week: week ?? this.week,
       subgroup: subgroup ?? this.subgroup,
+      building: building ?? this.building,
     );
   }
 
